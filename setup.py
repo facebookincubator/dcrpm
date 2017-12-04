@@ -13,7 +13,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-from distutils.core import setup
+from setuptools import setup
 
 __version__ = '0.0.1'
 
@@ -42,5 +42,10 @@ setup(
     keywords=['dcrpm', 'rpm', 'yum', 'db_recover', 'db4', 'bdb'],
     description='A tool to detect and correct common issues around RPM database corruption.',
     long_description=long_description,
-    license='GPLv2'
+    license='GPLv2',
+    entry_points={
+      'console_scripts': [
+        'dcrpm=dcrpm.main:main',
+      ],
+    },
 )

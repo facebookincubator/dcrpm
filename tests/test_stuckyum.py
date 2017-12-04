@@ -17,10 +17,10 @@ import unittest
 
 from mock import patch
 
-from .mock_process import make_mock_process
-from ..stuckyum import StuckYum
+from tests.mock_process import make_mock_process
+from dcrpm.stuckyum import StuckYum
 
-pidutil_mod = 'pe.dcrpm.py.pidutil'
+pidutil_mod = 'dcrpm.pidutil'
 
 
 class TestStuckYum(unittest.TestCase):

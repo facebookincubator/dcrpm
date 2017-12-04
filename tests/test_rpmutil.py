@@ -17,8 +17,8 @@ import unittest
 
 from mock import Mock, call, patch
 
-from .. import rpmutil
-from ..util import (
+from dcrpm import rpmutil
+from dcrpm.util import (
     CompletedProcess,
     DcRPMException,
     DBNeedsRecovery,

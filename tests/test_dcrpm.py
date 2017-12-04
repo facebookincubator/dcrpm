@@ -19,9 +19,9 @@ import unittest
 
 from mock import patch
 
-from ..dcrpm import DcRPM
-from ..rpmutil import RPMUtil, RPM_PATH
-from ..util import DcRPMException
+from dcrpm.dcrpm import DcRPM
+from dcrpm.rpmutil import RPMUtil, RPM_PATH
+from dcrpm.util import DcRPMException
 
 MockPopenFile = namedtuple('MockPopenFile', ['path'])
 statvfs_result = namedtuple('statvfs_result', ['f_bsize', 'f_bfree'])
@@ -73,8 +73,8 @@ class TestDcRPM(unittest.TestCase):
         self.dcrpm = DcRPM(self.rpmutil, self.args)
 
     # run_recovery
-    @patch('pe.dcrpm.py.pidutil.send_signals')
-    @patch('pe.dcrpm.py.rpmutil.RPMUtil.recover_db')
+    @patch('dcrpm.pidutil.send_signals')
+    @patch('dcrpm.rpmutil.RPMUtil.recover_db')
     def test_run_recovery_dry_run(self, mock_recover, mock_kill):
         self.args.dry_run = True
         self.dcrpm.run_recovery()
@@ -82,7 +82,7 @@ class TestDcRPM(unittest.TestCase):
         mock_kill.assert_not_called()
 
     # run_rebuild
-    @patch('pe.dcrpm.py.rpmutil.RPMUtil.rebuild_db')
+    @patch('dcrpm.rpmutil.RPMUtil.rebuild_db')
     def test_run_rebuild_dry_run(self, mock_rebuild):
         self.args.dry_run = True
         self.dcrpm.run_rebuild()

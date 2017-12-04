@@ -11,8 +11,8 @@ import unittest
 
 from mock import mock_open, patch
 
-from .. import pidutil
-from .mock_process import make_mock_process
+from dcrpm import pidutil
+from tests.mock_process import make_mock_process
 
 stat_result = namedtuple('stat_result', ['st_mtime'])
 
@@ -105,7 +105,7 @@ class TestPidutil(unittest.TestCase):
     # pidfile_info
     def test_pidfile_info_sucess(self):
         with patch(
-            'pe.dcrpm.py.pidutil.open',
+            'dcrpm.pidutil.open',
             mock_open(read_data='12345'),
         ) as mock_o, patch(
             'os.stat', return_value=stat_result('12345678')
@@ -115,14 +115,14 @@ class TestPidutil(unittest.TestCase):
         mock_o.assert_called_once_with('/some/path')
 
     def test_pidfile_info_bad_pid(self):
-        with patch('pe.dcrpm.py.pidutil.open', mock_open(read_data='-1')), \
+        with patch('dcrpm.pidutil.open', mock_open(read_data='-1')), \
                 patch('os.stat', return_value=stat_result('12345678')):
             with self.assertRaises(ValueError):
                 pid, _ = pidutil.pidfile_info('/something')
 
     def test_pidfile_info_invalid_pid(self):
         with patch(
-            'pe.dcrpm.py.pidutil.open',
+            'dcrpm.pidutil.open',
             mock_open(read_data='ooglybogly'),
         ), patch(
             'os.stat', return_value=stat_result('12345678')

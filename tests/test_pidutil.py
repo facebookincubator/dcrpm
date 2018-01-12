@@ -51,6 +51,16 @@ class TestPidutil(unittest.TestCase):
             procs = pidutil.pids_holding_file('/tmp/a')
         self.assertEqual(len(procs), 0)
 
+    def test_pids_holding_file_timeout(self):
+        procs = [
+            make_mock_process(12345, ['/tmp/a', '/tmp/2']),
+            make_mock_process(54321, ['/tmp/1', '/tmp/3']),
+            make_mock_process(12346, ['/tmp/a', '/tmp/3'], timeout=True),
+        ]
+        with patch('psutil.process_iter', return_value=procs):
+            procs = pidutil.pids_holding_file('/tmp/a')
+            self.assertEqual(len(procs), 1)
+
     # send_signal
     def test_send_signal_success(self):
         proc = make_mock_process(12345, [])

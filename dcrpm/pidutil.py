@@ -17,6 +17,8 @@ import os
 
 import psutil
 
+from .util import TimeoutExpired, call_with_timeout
+
 DEFAULT_TIMEOUT = 5  # seconds
 MIN_PID = 2  # Don't kill init/launchd or kernel_task
 
@@ -31,8 +33,12 @@ def pids_holding_file(path):
     procs = set()
     for proc in psutil.process_iter():
         try:
-            pinfo = proc.as_dict(attrs=['pid', 'open_files'])
-        except psutil.NoSuchProcess:
+            pinfo = call_with_timeout(
+                proc.as_dict,
+                DEFAULT_TIMEOUT,
+                kwargs={'attrs': ['pid', 'open_files']},
+            )
+        except (psutil.NoSuchProcess, TimeoutExpired):
             continue
 
         # Sometimes open_files can be None.

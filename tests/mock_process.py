@@ -17,6 +17,8 @@ from collections import namedtuple
 from mock import create_autospec
 import psutil
 
+from dcrpm.util import TimeoutExpired
+
 MockPopenFile = namedtuple('MockPopenFile', ['path'])
 
 
@@ -27,6 +29,7 @@ def make_mock_process(
     as_dict_throw=False,
     signal_throw=False,
     wait_throw=False,
+    timeout=False,
 ):
     # type: (int, List[str], str, bool, bool, bool) -> psutil.Process
     """
@@ -37,8 +40,14 @@ def make_mock_process(
     mock_process = create_autospec(psutil.Process)
     mock_process.pid = pid
     mock_process.name.return_value = name
+    mock_process.as_dict.__name__ = 'as_dict'
     if as_dict_throw:
         mock_process.as_dict.side_effect = psutil.NoSuchProcess(pid)
+
+    # This is hacky, but it works to simulate a TimeoutExpired actually being
+    # raised by as_dict.
+    elif timeout:
+        mock_process.as_dict.side_effect = TimeoutExpired()
     else:
         mock_process.as_dict.return_value = {
             'pid': pid,

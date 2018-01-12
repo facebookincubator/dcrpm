@@ -12,10 +12,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import subprocess
 import unittest
 
-from mock import Mock, call, patch
+from mock import call, patch
 
 from dcrpm import rpmutil
 from dcrpm.util import (
@@ -24,30 +23,7 @@ from dcrpm.util import (
     DBNeedsRecovery,
 )
 
-run_str = __name__ + '.rpmutil.RPMUtil.run_with_timeout'
-
-
-def make_mock_popen(
-    stdout='',
-    stderr='',
-    returncode=0,
-    communicate_raise=False,
-):
-    # type: (str, str, int, bool) -> Mock
-    """
-    Creates a simple mocked Popen object that responds to Popen.poll and
-    Popen.communicate.
-    """
-    mock_popen = Mock()
-    config = {
-        'communicate.return_value': (stdout, stderr),
-        'poll.return_value': returncode,
-    }
-    if communicate_raise:
-        del config['communicate.return_value']
-        config['communicate.side_effect'] = rpmutil.TimeoutExpired()
-    mock_popen.configure_mock(**config)
-    return mock_popen
+run_str = __name__ + '.rpmutil.run_with_timeout'
 
 
 class TestRPMUtil(unittest.TestCase):
@@ -184,62 +160,4 @@ class TestRPMUtil(unittest.TestCase):
         mock_run.assert_called_once_with(
             '{} --cleanup'.format(self.yum_complete_transaction_path),
             rpmutil.RPM_CHECK_TIMEOUT_SEC,
-        )
-
-    # run_with_timeout
-    @patch('subprocess.Popen', return_value=make_mock_popen())
-    def test_run_with_timeout_success(self, mock_popen):
-        result = self.rpmutil.run_with_timeout('/bin/true', 5)
-        self.assertEqual(result.returncode, 0)
-        mock_popen.assert_called_once_with(
-            '/bin/true',
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-
-    @patch(
-        'subprocess.Popen',
-        return_value=make_mock_popen(returncode=1, communicate_raise=True),
-    )
-    def test_run_with_timeout_timeout(self, mock_popen):
-        with self.assertRaises(DcRPMException):
-            self.rpmutil.run_with_timeout('/bin/true', 5)
-        mock_popen.assert_called_once_with(
-            '/bin/true',
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-
-    @patch('subprocess.Popen', return_value=make_mock_popen(returncode=1))
-    def test_run_with_timeout_raise_on_nonzero(self, mock_popen):
-        with self.assertRaises(DcRPMException):
-            self.rpmutil.run_with_timeout('/bin/true', 5)
-        mock_popen.assert_called_once_with(
-            '/bin/true',
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-
-    # Note that this runs a real `sleep 2` command. This ensures the timeout
-    # mechanism works correctly with signals/alarms.
-    def test_run_with_timeout_times_out_real_command(self):
-        with self.assertRaises(DcRPMException):
-            self.rpmutil.run_with_timeout('/bin/sleep 2', 1)
-
-    @patch('subprocess.Popen', return_value=make_mock_popen(returncode=1))
-    def test_run_with_timeout_no_raise_on_nonzero(self, mock_popen):
-        result = self.rpmutil.run_with_timeout(
-            '/bin/true',
-            5,
-            raise_on_nonzero=False,
-        )
-        self.assertEqual(result.returncode, 1)
-        mock_popen.assert_called_once_with(
-            '/bin/true',
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
         )

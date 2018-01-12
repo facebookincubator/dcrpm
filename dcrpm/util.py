@@ -12,6 +12,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
+import signal
+import subprocess
+
+_logger = logging.getLogger()
+
 
 class DcRPMException(Exception):
     """
@@ -30,6 +36,14 @@ class DBNeedsRecovery(DcRPMException):
 class DBNeedsRebuild(DcRPMException):
     """
     Condition indicating the RPM DB needs to be rebuilt.
+    """
+    pass
+
+
+class TimeoutExpired(Exception):
+    """
+    Simple exception shim indicating a subprocess timeout because Python 2
+    doesn't have this.
     """
     pass
 
@@ -77,3 +91,77 @@ ACTION_NAMES = {
     RepairAction.STUCK_YUM: 'stuck_yum',
     RepairAction.CLEAN_YUM_TRANSACTIONS: 'cleanup_yum_transactions',
 }
+
+
+def alarm_handler(signum, frame):
+    # type: (int, Any) -> None
+    """
+    Alarm handler to pass to signal.signal for subprocess timeout.
+    """
+    raise TimeoutExpired()
+
+
+def call_with_timeout(func, timeout, raise_=True, args=None, kwargs=None):
+    # type: (Callable, int, bool, List[Any], Dict[str, Any]) -> Optional[Any]
+    """
+    A generic method that calls some callable and uses SIGALRM to time out the
+    call should it take longer than `timeout`.
+    If `raise_` is True, then it will raise a TimeoutExpired exception
+    indicating the callable timed out. If `raise_` is False and the call times
+    out, this function returns None.
+    `args` is a list of arguments to pass to the callable (like *args)
+    `kwargs` is a dict of keyword arguments to pass to the callable (like
+    **kwargs)
+    """
+    _logger.debug('Calling "%s"', func.__name__)
+
+    if args is None:
+        args = []
+    if kwargs is None:
+        kwargs = {}
+
+    # Handle command timeouts.
+    # from: https://stackoverflow.com/a/1191537
+    signal.signal(signal.SIGALRM, alarm_handler)
+    signal.alarm(timeout)
+    output = None
+    try:
+        output = func(*args, **kwargs)
+    except TimeoutExpired:
+        msg = '{} timed out after {}s'.format(func.__name__, timeout)
+        _logger.error(msg)
+        if raise_:
+            raise
+    finally:
+        signal.alarm(0)
+
+    return output
+
+
+def run_with_timeout(cmd, timeout, raise_on_nonzero=True):
+    # type: (str, int, bool) -> CompletedProcess
+    """
+    Runs command `cmd` with timeout `timeout`. Raises an DcRPMException if
+    command times out or returns a nonzero exit code.
+    """
+    _logger.debug('Running %s', cmd)
+    cmdname = cmd.split()[0]
+    proc = subprocess.Popen(
+        cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        stdout, stderr = call_with_timeout(proc.communicate, timeout)
+    except TimeoutExpired:
+        raise DcRPMException('%s timed out after %s', cmdname, timeout)
+
+    # Now get returncode.
+    rc = proc.poll()
+    if raise_on_nonzero and rc != 0:
+        msg = '{} returned nonzero exit code ({})'.format(cmdname, rc)
+        _logger.error(msg)
+        raise DcRPMException(msg)
+
+    return CompletedProcess(returncode=rc, stdout=stdout, stderr=stderr)

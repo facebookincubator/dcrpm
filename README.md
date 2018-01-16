@@ -1,4 +1,7 @@
 # dcrpm
+
+[![Build Status](https://travis-ci.org/facebookincubator/dcrpm.svg)](http://travis-ci.org/facebookincubator/dcrpm)
+
 dcrpm ("detect and correct rpm") is a tool to detect and correct common issues around RPM database corruption. It attempts a query against your RPM database and runs db4's `db_recover` if it's hung or otherwise seems broken. It then kills any jobs which had the RPM db open previously since they will be stuck in infinite loops within libdb and can't recover cleanly.
 
 ## Usage

@@ -12,13 +12,31 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
 import os
+import sys
+
 from setuptools import setup
+
 
 __version__ = '0.0.1'
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as f:
     long_description = f.read()
+
+
+try:
+    # convert readme to rst so it will be displayed on pypi (not critical so
+    # it's ok to not do it)
+    import pypandoc
+    new_long_description = pypandoc.convert_text(
+        long_description, 'rst', format='md')
+    assert new_long_description
+    long_description = new_long_description
+except Exception:
+    # it's ok if this fails.
+    logging.exception("Could not translate readme into a rst!")
+
 
 setup(
     name='dcrpm',

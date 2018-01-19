@@ -66,10 +66,12 @@ class TestRPMUtil(unittest.TestCase):
     )
     def test_check_rpm_qa_success(self, mock_run):
         self.rpmutil.check_rpm_qa()
-        mock_run.assert_called_once_with(
+        self.assertIn(
             '{} --dbpath {} -qa'.format(self.rpmpath, self.dbpath),
-            5,
+            mock_run.call_args[0]
         )
+        self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
+        mock_run.assert_called_once()
 
     @patch(
         run_str,
@@ -80,37 +82,45 @@ class TestRPMUtil(unittest.TestCase):
     def test_check_rpm_qa_not_enough_packages(self, mock_run):
         with self.assertRaises(DBNeedsRecovery):
             self.rpmutil.check_rpm_qa()
-        mock_run.assert_called_once_with(
+        self.assertIn(
             '{} --dbpath {} -qa'.format(self.rpmpath, self.dbpath),
-            5,
+            mock_run.call_args[0]
         )
+        self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
+        mock_run.assert_called_once()
 
     @patch(run_str, return_value=CompletedProcess(returncode=1))
     def test_check_rpm_qa_raise_on_nonzero_rc(self, mock_run):
         with self.assertRaises(DBNeedsRecovery):
             self.rpmutil.check_rpm_qa()
-        mock_run.assert_called_once_with(
+        self.assertIn(
             '{} --dbpath {} -qa'.format(self.rpmpath, self.dbpath),
-            rpmutil.RPM_CHECK_TIMEOUT_SEC,
+            mock_run.call_args[0]
         )
+        self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
+        mock_run.assert_called_once()
 
     # recover_db
     @patch(run_str, return_value=CompletedProcess())
     def test_recover_db_success(self, mock_run):
         self.rpmutil.recover_db()
-        mock_run.assert_called_once_with(
+        self.assertIn(
             '{} -h {}'.format(self.recover_path, self.dbpath),
-            rpmutil.RECOVER_TIMEOUT_SEC,
+            mock_run.call_args[0]
         )
+        self.assertIn(rpmutil.RECOVER_TIMEOUT_SEC, mock_run.call_args[0])
+        mock_run.assert_called_once()
 
     # rebuild_db
     @patch(run_str, return_value=CompletedProcess())
     def test_rebuild_db_success(self, mock_run):
         self.rpmutil.rebuild_db()
-        mock_run.assert_called_once_with(
+        self.assertIn(
             '{} --dbpath {} --rebuilddb'.format(rpmutil.RPM_PATH, self.dbpath),
-            rpmutil.REBUILD_TIMEOUT_SEC,
+            mock_run.call_args[0]
         )
+        self.assertIn(rpmutil.REBUILD_TIMEOUT_SEC, mock_run.call_args[0])
+        mock_run.assert_called_once()
 
     # check_tables
     @patch(run_str, return_value=CompletedProcess(returncode=1))
@@ -157,7 +167,9 @@ class TestRPMUtil(unittest.TestCase):
     @patch(run_str, return_value=CompletedProcess(returncode=0))
     def test_clean_yum_transactions_success(self, mock_run):
         self.rpmutil.clean_yum_transactions()
-        mock_run.assert_called_once_with(
+        self.assertIn(
             '{} --cleanup'.format(self.yum_complete_transaction_path),
-            rpmutil.RPM_CHECK_TIMEOUT_SEC,
+            mock_run.call_args[0]
         )
+        self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
+        mock_run.assert_called_once()

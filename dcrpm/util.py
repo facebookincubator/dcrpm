@@ -16,6 +16,8 @@ import logging
 import signal
 import subprocess
 
+END_TIMEOUT = 5  # seconds
+
 _logger = logging.getLogger()
 
 
@@ -113,8 +115,6 @@ def call_with_timeout(func, timeout, raise_=True, args=None, kwargs=None):
     `kwargs` is a dict of keyword arguments to pass to the callable (like
     **kwargs)
     """
-    _logger.debug('Calling "%s"', func.__name__)
-
     if args is None:
         args = []
     if kwargs is None:
@@ -128,8 +128,6 @@ def call_with_timeout(func, timeout, raise_=True, args=None, kwargs=None):
     try:
         output = func(*args, **kwargs)
     except TimeoutExpired:
-        msg = '{} timed out after {}s'.format(func.__name__, timeout)
-        _logger.error(msg)
         if raise_:
             raise
     finally:
@@ -141,8 +139,8 @@ def call_with_timeout(func, timeout, raise_=True, args=None, kwargs=None):
 def run_with_timeout(cmd, timeout, raise_on_nonzero=True):
     # type: (str, int, bool) -> CompletedProcess
     """
-    Runs command `cmd` with timeout `timeout`. Raises an DcRPMException if
-    command times out or returns a nonzero exit code.
+    Runs command `cmd` with timeout `timeout`. If `raise_on_nonzero` is True,
+    raises a DcRPMException if `cmd` exits with a nonzero status.
     """
     _logger.debug('Running %s', cmd)
     cmdname = cmd.split()[0]
@@ -155,7 +153,13 @@ def run_with_timeout(cmd, timeout, raise_on_nonzero=True):
     try:
         stdout, stderr = call_with_timeout(proc.communicate, timeout)
     except TimeoutExpired:
-        raise DcRPMException('%s timed out after %s', cmdname, timeout)
+        msg = '%s timed out after %d' % (cmdname, timeout)
+        _logger.error(msg)
+
+        # Be nice about ending the process.
+        _logger.info('Terminating %s', cmdname)
+        kindly_end(proc)
+        raise DcRPMException(msg)
 
     # Now get returncode.
     rc = proc.poll()
@@ -165,3 +169,22 @@ def run_with_timeout(cmd, timeout, raise_on_nonzero=True):
         raise DcRPMException(msg)
 
     return CompletedProcess(returncode=rc, stdout=stdout, stderr=stderr)
+
+
+def kindly_end(proc, timeout=END_TIMEOUT):
+    # type: (Popen, int) -> None
+    """
+    Tries to nicely end process `proc`, first by sending SIGTERM and then, if it
+    still running, SIGKILL.
+    """
+    try:
+        _logger.info('Sending SIGTERM to %d', proc.pid)
+        proc.terminate()
+        call_with_timeout(proc.wait, timeout)
+    except TimeoutExpired:
+        _logger.warning('Could not SIGTERM %d, sending SIGKILL', proc.pid)
+        try:
+            proc.kill()
+            call_with_timeout(proc.wait, timeout)
+        except TimeoutExpired:
+            _logger.error('Could not SIGKILL %d, good luck', proc.pid)

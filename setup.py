@@ -14,12 +14,10 @@ from __future__ import unicode_literals
 
 import logging
 import os
-import sys
 
 from setuptools import setup
 
-
-__version__ = '0.0.1'
+import dcrpm.__version__
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as f:
     long_description = f.read()
@@ -40,7 +38,7 @@ except Exception:
 
 setup(
     name='dcrpm',
-    version=__version__,
+    version=dcrpm.__version__,
     packages=['dcrpm'],
     author='Sean Karlage',
     author_email='skarlage@fb.com',

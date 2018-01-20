@@ -18,6 +18,7 @@ import logging
 import logging.config
 import sys
 
+from . import __version__
 from .dcrpm import DcRPM
 from .rpmutil import RPMUtil
 
@@ -63,6 +64,10 @@ def parse_args():
     parser = argparse.ArgumentParser(
         prog='dcrpm',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        '--version',
+        action='version', version='%(prog)s ' + __version__
     )
     parser.add_argument(
         '--dry-run',

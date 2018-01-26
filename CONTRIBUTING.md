@@ -3,8 +3,7 @@ We want to make contributing to this project as easy and transparent as
 possible.
 
 ## Our Development Process
-This repository is synced from an internal repository. We gladly accept
-pull requests and will deal with the merging appropriately.
+We gladly accept pull requests and will deal with the merging appropriately.
 
 ## Contributor License Agreement ("CLA")
 In order to accept your pull request, we need you to submit a CLA. You only
@@ -22,7 +21,8 @@ process outlined on that page and do not file a public issue.
 
 ## Sending a pull request
 Have a fix or feature? Awesome! When you send the pull request we suggest you
-include a build output.
+include a test output if relevant. New features should be accompained by tests
+whenever possible.
 
 We will hold all contributions to the same quality and style standards as the
 existing code.

@@ -16,15 +16,20 @@ The easiest way to install dcrpm is get the source and install it using setup.py
 
     python setup.py install
 
-This will fetch psutils from pypi for you.
+This will fetch psutil from pypi for you. dcrpm also assumes that the system will have RPM and Yum installed.
 
 
-## Building and installing for develop
+## Building and installing for development
 If you want to develop, the easiest way to get dcrpm is by using pip:
 
     pip install -r requirements.txt # get extra packages
     python setup.py install
 
+When developing it's important to make sure the tests continue to pass, and to ensure new features have the appropriate test coverage. You can run the test suite with:
+
+    python setup.py test
+
+which will fetch mock from pypi if needed and then run the tests.
 
 ## Contribute
 See the CONTRIBUTING file for how to help out.

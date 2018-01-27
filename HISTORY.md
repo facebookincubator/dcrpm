@@ -9,4 +9,4 @@ As of mid-April 2014, dcrpm also checks for mismatches between RPM tables.  Beli
 
 In late April 2014, dcrpm picked up the notion of verifying individual tables.  It will run `db_verify` on the tables in `/var/lib/rpm` (those starting with a capital letter), and if any anomalies are found, will run a RPM rebuild.  October 2014 added a feature to clean up outstanding yum transactions and also deal with subprocess timeouts gracefully (a bug fix).
 
-The original dcrpm was an internal C++ implementation by Rachel Kroll <rkroll@fb.com>. It was rewritten Python in 2017 by Sean Karlage <skarlage@fb.com> to remove Facebook internal dependencies and make it able to run on OSX as well. This new implementation is the starting point of this codebase.
+The original dcrpm was an internal C++ implementation by [Rachel Kroll](mailto:rkroll@fb.com). It was rewritten Python in 2017 by [Sean Karlage](skarlage@fb.com) to remove Facebook internal dependencies and make it able to run on OSX as well. This new implementation is the starting point of this codebase.

@@ -13,4 +13,4 @@ addons:
       - yum
 
 script:
-  - python -m unittest discover -v tests
+  - python setup.py test

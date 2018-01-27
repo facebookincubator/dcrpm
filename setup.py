@@ -62,6 +62,10 @@ setup(
     install_requires=[
       'psutil',
     ],
+    tests_require=[
+      'mock',
+    ],
+    test_suite='tests',
     entry_points={
       'console_scripts': [
         'dcrpm=dcrpm.main:main',

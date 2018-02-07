@@ -18,6 +18,6 @@ from __future__ import unicode_literals
 
 import sys
 
-__version__ = '0.0.2'
+__version__ = '0.1.0'
 
 sys.modules[__name__] = __version__

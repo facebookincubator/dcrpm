@@ -48,13 +48,19 @@ DEFAULT_LOGGING_CONFIG = {
             'class': 'logging.FileHandler',
             'filename': '/var/log/dcrpm.log',
         },
+        'forensic_logger': {
+            'level': 'DEBUG',
+            'formatter': 'standard',
+            'class': 'pe.dcrpm.py.forensic_logger.ForensicLogger',
+            'logdir': '/tmp',
+        },
     },
     'loggers': {
         '': {
             'handlers': ['console', 'file'],
         },
         'status': {
-            'handlers': ['console'],
+            'handlers': ['console', 'forensic_logger'],
         },
     },
 }

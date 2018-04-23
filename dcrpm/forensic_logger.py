@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import logging
+import time
+import os
+
+from datetime import datetime
+
+
+class ForensicLogger(logging.Handler):
+    """
+    Minimal implementation of special purpose logger
+    We're capturing full verbose command output, and writing to timestamped
+    files in `logdir`
+    """
+
+    def __init__(self, logdir, *args, **kwargs):
+        self.logdir = logdir
+        super(ForensicLogger, self).__init__(*args, **kwargs)
+
+    def debug(self, record):
+        # Check if 'key' was supplied to the logger
+        # logger.debug(text, extra={'key': filename})
+        if not hasattr(record, 'key'):
+            return
+
+        with open(os.path.join(self.logdir, "{}.{}.txt".format(record.key,
+            datetime.fromtimestamp(time.time()).strftime('%Y%m%d%H%M%S'),
+        )), 'w') as fp:
+            fp.write(record.msg)
+
+    def emit(self, record):
+        if record.levelno == logging.DEBUG:
+            self.debug(record)

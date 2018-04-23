@@ -21,6 +21,14 @@ END_TIMEOUT = 5  # seconds
 _logger = logging.getLogger()
 
 
+class StatusCode:
+    """
+    Command return codes codified
+    """
+    SUCCESS = 0
+    SEGFAULT = -11
+
+
 class DcRPMException(Exception):
     """
     Exception to handle generic operation failures in dcrpm-py.

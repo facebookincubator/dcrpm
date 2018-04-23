@@ -84,8 +84,13 @@ class DcRPM:
             # Need to run db_recover.
             except DBNeedsRecovery:
                 self.logger.error('DB needs recovery')
-                self.run_recovery()
-                continue
+                try:
+                    self.run_recovery()
+                    continue
+                except DBNeedsRebuild:
+                    self.logger.error('DB needs rebuild')
+                    self.run_rebuild()
+                    continue
 
             # Need to run rpm --rebuilddb.
             except DBNeedsRebuild:

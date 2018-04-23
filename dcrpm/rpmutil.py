@@ -22,6 +22,7 @@ from .util import (
     DcRPMException,
     RepairAction,
     run_with_timeout,
+    StatusCode,
 )
 
 RPM_CHECK_TIMEOUT_SEC = 5
@@ -86,11 +87,22 @@ class RPMUtil:
         Runs `db_recover`.
         """
         cmd = '{} -h {}'.format(self.recover_path, self.dbpath)
-        try:
-            run_with_timeout(cmd, RECOVER_TIMEOUT_SEC)
-        except DcRPMException:
-            self.status_logger.warning('db_recover_failed')
-            raise
+
+        proc = run_with_timeout(
+            cmd, RECOVER_TIMEOUT_SEC, raise_on_nonzero=False
+        )
+        # We've seen an unrecoverable failure mode where
+        # db_recover segfaults, remediable only by a rebuild
+        if proc.returncode != StatusCode.SUCCESS:
+            if proc.returncode == StatusCode.SEGFAULT:
+                raise DBNeedsRebuild
+            else:
+                self.status_logger.warning('db_recover_failed')
+                raise DcRPMException(
+                    'db_recover returned nonzero exit code ({})'.format(
+                        proc.returncode
+                    )
+                )
 
     def rebuild_db(self):
         # type: () -> None

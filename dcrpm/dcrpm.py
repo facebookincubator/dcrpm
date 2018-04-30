@@ -69,6 +69,12 @@ class DcRPM:
                 self.rpmutil.check_rpm_qa()
                 self.logger.info('Black box check OK')
 
+                self.logger.info(
+                    'Running silent corruption check (rpm -q rpm)'
+                )
+                self.rpmutil.check_rpm_q_rpm()
+                self.logger.info('Silent corruption check OK')
+
                 # Check tables (mismatch for -qa vs. -q).
                 self.logger.info(
                     'Running table checks (attempting to query each package)'

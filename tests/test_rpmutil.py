@@ -21,6 +21,7 @@ from dcrpm.util import (
     CompletedProcess,
     DcRPMException,
     DBNeedsRecovery,
+    DBNeedsRebuild,
 )
 
 run_str = __name__ + '.rpmutil.run_with_timeout'
@@ -51,6 +52,40 @@ class TestRPMUtil(unittest.TestCase):
             '/var/lib/rpm/table2',
             '/var/lib/rpm/table3',
         ]
+
+    # check_rpm_q_rpm
+    @patch(
+        run_str,
+        return_value=CompletedProcess(
+            stdout='\n'.join(
+                [
+                    "rpm-4.13.0-1.el7.centos.fb4.x86_64",
+                ]
+            ),
+        )
+    )
+    def test_check_rpm_q_rpm_success(self, mock_run):
+        self.rpmutil.check_rpm_q_rpm()
+        self.assertIn(
+            '{} --dbpath {} -q rpm'.format(self.rpmpath, self.dbpath),
+            mock_run.call_args[0]
+        )
+        self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
+        mock_run.assert_called_once()
+
+    @patch(
+        run_str,
+        return_value=CompletedProcess(
+            stdout='\n'.join(
+                [
+                    "perl-File-Path-2.09-2.el7.noarch",
+                ]
+            ),
+        )
+    )
+    def test_check_rpm_q_rpm_failure(self, mock_run):
+        with self.assertRaises(DBNeedsRebuild):
+            self.rpmutil.check_rpm_q_rpm()
 
     # check_rpm_qa
     @patch(

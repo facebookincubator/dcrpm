@@ -81,6 +81,22 @@ class RPMUtil:
 
         self.logger.debug('Package count: %d', len(packages))
 
+    def check_rpm_q_rpm(self):
+        # type: () -> None
+        """
+        The most basic sanity check, as `rpm -q rpm` can return out
+        of whack results (like 'perl' >.>)
+        """
+        try:
+            cmd = '{} --dbpath {} -q rpm'.format(RPM_PATH, self.dbpath)
+            result = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC)
+            stdout = result.stdout.strip().split()
+            if not len(stdout) == 1 or not stdout[0].startswith('rpm-'):
+                raise DBNeedsRebuild()
+        except DcRPMException:
+            self.logger.error('rpm -q rpm failed')
+            raise DBNeedsRecovery()
+
     def recover_db(self):
         # type: () -> None
         """

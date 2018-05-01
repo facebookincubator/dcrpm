@@ -71,6 +71,11 @@ class DcRPM:
                     )
                     self.rpmutil.db_stat()
 
+                # Exercise single indexes
+                self.logger.info('Sanity checking rpmdb indexes')
+                self.rpmutil.check_rpmdb_indexes()
+                self.logger.info('Rpmdb indexes OK')
+
                 # Black box check - does rpm -qa even work?
                 self.logger.info('Running black box check (rpm -qa)')
                 self.rpmutil.check_rpm_qa()

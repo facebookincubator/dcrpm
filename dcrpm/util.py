@@ -43,6 +43,13 @@ class DBNeedsRecovery(DcRPMException):
     pass
 
 
+class DBIndexNeedsRebuild(DcRPMException):
+    """
+    Single BDB index might need a rebuild
+    """
+    pass
+
+
 class DBNeedsRebuild(DcRPMException):
     """
     Condition indicating the RPM DB needs to be rebuilt.
@@ -82,6 +89,7 @@ class RepairAction:
     KILL_LOCK_PIDS = 3
     STUCK_YUM = 4
     CLEAN_YUM_TRANSACTIONS = 5
+    INDEX_REBUILD = 6
 
 
 class Result:
@@ -100,6 +108,7 @@ ACTION_NAMES = {
     RepairAction.KILL_LOCK_PIDS: 'kill_lock_pids',
     RepairAction.STUCK_YUM: 'stuck_yum',
     RepairAction.CLEAN_YUM_TRANSACTIONS: 'cleanup_yum_transactions',
+    RepairAction.INDEX_REBUILD: 'index_rebuild',
 }
 
 

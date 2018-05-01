@@ -23,6 +23,7 @@ from .util import (
     RepairAction,
     run_with_timeout,
     StatusCode,
+    DBIndexNeedsRebuild,
 )
 
 RPM_CHECK_TIMEOUT_SEC = 5
@@ -82,6 +83,137 @@ class RPMUtil:
         except DcRPMException:
             # This is debug command, we're ignoring failures
             self.logger.error('db_stat -CA failed')
+
+    def _poke_index(self, cmd, checks):
+        # Run cmd, and ensure all checks are True
+        # Raise DBIndexNeedsRebuild otherwise
+        proc = run_with_timeout(
+            cmd, RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
+        )
+        for check in checks:
+            if not check(proc):
+                raise DBIndexNeedsRebuild
+
+    def check_rpmdb_indexes(self):
+        # For each rpmdb file we define a rpm command that blows up
+        # on inconsistencies, or returns incorrect results
+        # Structure:
+        # 'name_of_file': {
+        #     'cmd': 'str', # rpm command
+        #     'checks': [], # list of conditions to be met
+        # }
+
+        rpmdb_indexes = {
+            'Basenames': {
+                'cmd': '{} -qf {} --dbpath {}'.format(
+                    RPM_PATH, RPM_PATH, self.dbpath
+                ),
+                'checks': [
+                    lambda proc: proc.returncode != StatusCode.SEGFAULT,
+                    lambda proc: len(proc.stdout.splitlines()) == 1,
+                    lambda proc: proc.stdout.splitlines()[0].startswith('rpm-'),
+                ],
+            },
+            'Conflictname': {
+                'cmd': '{} -q --conflicts initscripts --dbpath {}'.format(
+                    RPM_PATH, self.dbpath
+                ),
+                'checks': [
+                    lambda proc: proc.returncode != StatusCode.SEGFAULT,
+                    lambda proc: len(proc.stdout.splitlines()) > 3,
+                ],
+            },
+            'Obsoletename': {
+                'cmd': '{} -q --obsoletes coreutils --dbpath {}'.format(
+                    RPM_PATH, self.dbpath
+                ),
+                'checks': [
+                    lambda proc: proc.returncode != StatusCode.SEGFAULT,
+                    lambda proc: len(proc.stdout.splitlines()) > 2,
+                ],
+            },
+            'Providename': {
+                'cmd': '{} -q --whatprovides rpm --dbpath {}'.format(
+                    RPM_PATH, self.dbpath
+                ),
+                'checks': [
+                    lambda proc: proc.returncode != StatusCode.SEGFAULT,
+                    lambda proc: len(proc.stdout.splitlines()) == 1,
+                    lambda proc: proc.stdout.splitlines()[0].startswith('rpm-'),
+                ],
+            },
+            'Requirename': {
+                'cmd': '{} -q --whatrequires rpm --dbpath {}'.format(
+                    RPM_PATH, self.dbpath
+                ),
+                'checks': [
+                    lambda proc: proc.returncode != StatusCode.SEGFAULT,
+                    lambda proc: len(proc.stdout.splitlines()) >= 1,
+                    lambda proc: any(line.startswith('rpm-') for
+                        line in proc.stdout.splitlines()),
+                ],
+            },
+            'Recommendname': None,
+            'Dirnames': None,
+            'Group': None,
+            'Name': None,
+            'Installtid': None,
+            'Enhancename': None,  # rarely used
+            'Filetriggername': None,  # rarely used
+            'Suggestname': None,  # rarely used
+            'Supplementname': None,  # rarely used
+            'Transfiletriggername': None,  # rarely used
+            'Triggername': None,  # rarely used
+        }
+
+        # Checks for Packages db corruption
+        post_checks = [
+            lambda proc: not any('cannot open Packages database' in
+                line for line in proc.stderr.splitlines()),
+            lambda proc: any('missing index' in line for line
+                in proc.stderr.splitlines()),
+        ]
+
+        for index, config in rpmdb_indexes.items():
+            try:
+
+                if not os.path.join(self.dbpath, index):
+                    # Skip over non existing indexes
+                    self.logger.info("{} does not exist".format(index))
+                    continue
+
+                if not config:
+                    # Skip over indexes with no defined checks / conditions
+                    continue
+
+                self.logger.info(
+                    "Attempting to selectively poke at {} index".format(index)
+                )
+                self._poke_index(config['cmd'], config['checks'])
+
+            except DcRPMException:
+                self.logger.info("RPM commands are failing too hard")
+                raise DBNeedsRecovery()
+
+            except DBIndexNeedsRebuild:
+
+                self.status_logger.info(RepairAction.INDEX_REBUILD)
+
+                self.logger.info(
+                    "{} index is out of whack, deleting it".format(index)
+                )
+                os.remove(os.path.join(self.dbpath, index))
+                # Run the same command again, which should trigger a rebuild
+                proc = run_with_timeout(
+                    config['cmd'], RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
+                )
+
+                # Sometimes single index rebuilds don't work, as rpm fails to
+                # open Packages db. In that case we'll try a full recovery
+                for check in post_checks:
+                    if not check(proc):
+                        self.logger.info("Granular index rebuild failed")
+                        raise DBNeedsRecovery()
 
     def check_rpm_qa(self):
         # type: () -> None

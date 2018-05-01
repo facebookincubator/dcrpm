@@ -1,0 +1,30 @@
+{
+    "version": 1,
+    "formatters": {
+        "plain": {
+            "format": "%(message)s"
+        }
+    },
+    "handlers": {
+        "test_handler": {
+            "level": "INFO",
+            "formatter": "plain",
+            "class": "pe.dcrpm.py.tests.logging.TestLogger"
+        },
+        "null_handler": {
+            "level": "INFO",
+            "formatter": "plain",
+            "class": "pe.dcrpm.py.tests.logging.NullLogger"
+        }
+    },
+    "loggers": {
+        "": {
+            "handlers": ["null_handler"],
+            "propagate": false
+        },
+        "status": {
+            "handlers": ["test_handler"],
+            "propagate": false
+        }
+    }
+}

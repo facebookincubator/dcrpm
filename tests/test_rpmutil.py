@@ -39,12 +39,14 @@ class TestRPMUtil(unittest.TestCase):
             'table1',
             'table2',
         ]
+        self.forensic = False,
         self.rpmutil = rpmutil.RPMUtil(
             dbpath=self.dbpath,
             recover_path=self.recover_path,
             verify_path=self.verify_path,
             yum_complete_transaction_path=self.yum_complete_transaction_path,
             blacklist=self.blacklist,
+            forensic=self.forensic,
         )
         self.rpmutil.tables = [
             '/var/lib/rpm/table0',

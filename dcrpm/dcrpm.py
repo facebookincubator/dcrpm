@@ -64,6 +64,13 @@ class DcRPM:
             self.logger.debug('Running pass: %d', i)
 
             try:
+                # Optional forensic data collection
+                if self.args.forensic:
+                    self.logger.info(
+                        'Running forensic data collection (db_stat -CA)'
+                    )
+                    self.rpmutil.db_stat()
+
                 # Black box check - does rpm -qa even work?
                 self.logger.info('Running black box check (rpm -qa)')
                 self.rpmutil.check_rpm_qa()

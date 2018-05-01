@@ -31,6 +31,7 @@ RECOVER_TIMEOUT_SEC = 90
 REBUILD_TIMEOUT_SEC = 300
 MIN_ACCEPTABLE_PKG_COUNT = 50
 RPM_PATH = '/bin/rpm'
+DB_STAT_PATH = '/bin/db_stat'
 
 
 class RPMUtil:
@@ -45,6 +46,7 @@ class RPMUtil:
         verify_path,
         yum_complete_transaction_path,
         blacklist,
+        forensic,
     ):
         # type: (str, str, str, str, List[str]) -> None
         self.dbpath = dbpath
@@ -52,9 +54,34 @@ class RPMUtil:
         self.verify_path = verify_path
         self.yum_complete_transaction_path = yum_complete_transaction_path
         self.blacklist = blacklist
+        self.forensic = forensic
         self.logger = logging.getLogger()
         self.status_logger = logging.getLogger('status')
         self.tables = [t for t in os.listdir(self.dbpath) if str(t).istitle()]
+
+    def db_stat(self):
+        # type: () -> None
+        """
+        Runs `db_stat -CA` which offers a view into the state of Berkeley DB
+        environment.
+        """
+        try:
+            cmd = '{} -CA -h {}'.format(DB_STAT_PATH, self.dbpath)
+            ds = run_with_timeout(
+                cmd, RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
+            )
+            if ds.returncode > 0:
+                # Sometimes db_stat can fail, let's try to preserve that
+                debug = ds.stderr
+            else:
+                debug = ds.stdout
+
+            self.status_logger.debug(
+                debug, extra={'key': 'db_stat'}
+            )
+        except DcRPMException:
+            # This is debug command, we're ignoring failures
+            self.logger.error('db_stat -CA failed')
 
     def check_rpm_qa(self):
         # type: () -> None
@@ -93,6 +120,8 @@ class RPMUtil:
             stdout = result.stdout.strip().split()
             if not len(stdout) == 1 or not stdout[0].startswith('rpm-'):
                 raise DBNeedsRebuild()
+        except DBNeedsRebuild:
+            raise
         except DcRPMException:
             self.logger.error('rpm -q rpm failed')
             raise DBNeedsRecovery()
@@ -110,15 +139,17 @@ class RPMUtil:
         # We've seen an unrecoverable failure mode where
         # db_recover segfaults, remediable only by a rebuild
         if proc.returncode != StatusCode.SUCCESS:
+            self.status_logger.warning('db_recover_failed')
             if proc.returncode == StatusCode.SEGFAULT:
                 raise DBNeedsRebuild
             else:
-                self.status_logger.warning('db_recover_failed')
                 raise DcRPMException(
                     'db_recover returned nonzero exit code ({})'.format(
                         proc.returncode
                     )
                 )
+        elif self.forensic:
+            self.status_logger.debug(proc.stderr, extra={'key': 'db_recover'})
 
     def rebuild_db(self):
         # type: () -> None

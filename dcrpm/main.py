@@ -135,6 +135,12 @@ def parse_args():
         help='Log debug messages',
     )
     parser.add_argument(
+        '-f',
+        '--forensic',
+        action='store_true',
+        help='Collect debug output for forensic investigations',
+    )
+    parser.add_argument(
         '-l',
         '--logging-config-file',
         metavar='FILE',
@@ -168,6 +174,7 @@ def main():
         verify_path=args.verify_path,
         yum_complete_transaction_path=args.yum_complete_transaction_path,
         blacklist=args.blacklist,
+        forensic=args.forensic,
     )
     try:
         rc = DcRPM(rpmutil, args).run()

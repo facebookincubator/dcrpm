@@ -45,6 +45,7 @@ class TestDcRPM(unittest.TestCase):
             verify_path=self.verify_path,
             yum_complete_transaction_path=self.yum_complete_transaction_path,
             blacklist=self.blacklist,
+            forensic=False,
         )
         self.rpmutil.tables = [
             'table0',
@@ -67,6 +68,7 @@ class TestDcRPM(unittest.TestCase):
             verbose=False,
             logfile='/var/log/blah.log',
             blacklist=['table2', 'table3'],
+            forensic=False,
         )
 
         # DcRPM
@@ -79,6 +81,15 @@ class TestDcRPM(unittest.TestCase):
         self.args.dry_run = True
         self.dcrpm.run_recovery()
         mock_recover.assert_not_called()
+        mock_kill.assert_not_called()
+
+    # db_stat
+    @patch('dcrpm.pidutil.send_signals')
+    @patch('dcrpm.rpmutil.RPMUtil.db_stat')
+    def test_db_stat_forensic(self, mock_db_stat, mock_kill):
+        self.args.forensic = True
+        self.dcrpm.run()
+        mock_db_stat.assert_called()
         mock_kill.assert_not_called()
 
     # run_rebuild

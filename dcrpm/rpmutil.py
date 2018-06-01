@@ -263,7 +263,7 @@ class RPMUtil:
         """
         Runs `db_recover`.
         """
-        cmd = '{} -e -h {}'.format(self.recover_path, self.dbpath)
+        cmd = '{} -h {}'.format(self.recover_path, self.dbpath)
 
         proc = run_with_timeout(
             cmd, RECOVER_TIMEOUT_SEC, raise_on_nonzero=False

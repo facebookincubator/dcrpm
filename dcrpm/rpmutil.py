@@ -27,6 +27,7 @@ from .util import (
 )
 
 RPM_CHECK_TIMEOUT_SEC = 5
+YUM_COMPLETE_TIMEOUT_SEC = 10
 VERIFY_TIMEOUT_SEC = 5
 RECOVER_TIMEOUT_SEC = 90
 REBUILD_TIMEOUT_SEC = 300
@@ -360,4 +361,4 @@ class RPMUtil:
         """
         cmd = '{} --cleanup'.format(self.yum_complete_transaction_path)
         self.status_logger.info(RepairAction.CLEAN_YUM_TRANSACTIONS)
-        run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC)
+        run_with_timeout(cmd, YUM_COMPLETE_TIMEOUT_SEC)

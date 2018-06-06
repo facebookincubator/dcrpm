@@ -208,5 +208,5 @@ class TestRPMUtil(unittest.TestCase):
             '{} --cleanup'.format(self.yum_complete_transaction_path),
             mock_run.call_args[0]
         )
-        self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
+        self.assertIn(rpmutil.YUM_COMPLETE_TIMEOUT_SEC, mock_run.call_args[0])
         mock_run.assert_called_once()

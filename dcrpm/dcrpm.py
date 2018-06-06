@@ -30,7 +30,7 @@ from .util import (
 
 class DcRPM:
     YUM_PATH = '/var/lib/yum'
-    YUM_TRANSACTION_BASE = '**/*transaction-all.*'
+    YUM_TRANSACTION_BASE = '*transaction-all.*'
 
     def __init__(self, rpmutil, args):
         # type: (RPMUtil, argparse.Namespace) -> None

@@ -83,7 +83,12 @@ class DcRPM:
 
                 if self.args.dbpath == '/var/lib/rpm':
 
-                    if self.args.run_yum_clean:
+                    if self.args.run_yum_check:
+                        self.logger.info("Running yum check")
+                        Yum().run_yum_check()
+                        self.logger.info('Yum check ok')
+
+                    if self.args.run_yum_clean and not self.args.run_yum_check:
                         self.logger.info("Running yum clean expire-cache")
                         Yum().run_yum_clean()
                         self.logger.info('Yum clean ok')

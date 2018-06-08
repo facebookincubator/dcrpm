@@ -54,6 +54,7 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
             yum_complete_transaction_path=self.yum_complete_transaction_path,
             dbpath=self.dbpath,
             run_yum_clean=False,
+            run_yum_check=False,
             max_passes=5,
             minspace=150 * 1048576,
             verbose=False,

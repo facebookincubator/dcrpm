@@ -99,3 +99,14 @@ class Yum:
             run_with_timeout(cmd, YUM_TIMEOUT_SEC)
         except DcRPMException:
             raise DBNeedsRebuild
+
+    def run_yum_check(self):
+        # type: () -> None
+        """
+        Run yum check - which "Checks for problems in the rpmdb"
+        """
+        try:
+            cmd = '{} check'.format(YUM_CMD_NAME)
+            run_with_timeout(cmd, YUM_TIMEOUT_SEC)
+        except DcRPMException:
+            raise DBNeedsRebuild

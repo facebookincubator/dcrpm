@@ -108,6 +108,11 @@ def parse_args():
         help='Check for yum clean failures',
     )
     parser.add_argument(
+        '--run-yum-check',
+        action='store_true',
+        help='Use "yum check" to find rpmdb problems',
+    )
+    parser.add_argument(
         '--yum-complete-transaction-path',
         metavar='PATH',
         default='/usr/sbin/yum-complete-transaction',

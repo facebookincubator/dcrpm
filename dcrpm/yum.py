@@ -17,21 +17,28 @@ import signal
 import time
 
 from . import pidutil
-from .util import RepairAction
+
+from .util import (
+    DBNeedsRebuild,
+    DcRPMException,
+    RepairAction,
+    run_with_timeout,
+)
 
 YUM_PID_PATH = '/var/run/yum.pid'
+YUM_TIMEOUT_SEC = 30
 MIN_YUM_AGE = 3600 * 6  # 6 hours
 YUM_CMD_NAME = 'yum'
 KILL_TIMEOUT = 5  # seconds
 
 
-class StuckYum:
+class Yum:
     def __init__(self):
         # type: () -> None
         self.logger = logging.getLogger()
         self.status_logger = logging.getLogger('status')
 
-    def run(self, dry_run=False):
+    def check_stuck(self, dry_run=False):
         # type: (bool) -> bool
         try:
             pid, mtime = pidutil.pidfile_info(YUM_PID_PATH)
@@ -80,3 +87,15 @@ class StuckYum:
 
         self.status_logger.warning(RepairAction.STUCK_YUM)
         return True
+
+    def run_yum_clean(self):
+        # type: () -> None
+        """
+        Run yum clean expire-cache, which we've seen failing when rpmdb indexes
+        were busted
+        """
+        try:
+            cmd = '{} clean expire-cache'.format(YUM_CMD_NAME)
+            run_with_timeout(cmd, YUM_TIMEOUT_SEC)
+        except DcRPMException:
+            raise DBNeedsRebuild

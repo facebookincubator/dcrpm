@@ -19,7 +19,7 @@ from os.path import join
 import signal
 
 from . import pidutil
-from .stuckyum import StuckYum
+from .yum import Yum
 from .util import (
     DBNeedsRecovery,
     DBNeedsRebuild,
@@ -55,9 +55,9 @@ class DcRPM:
 
         # Check stuck yum.
         if self.args.check_stuck_yum:
-            result = StuckYum().run(dry_run=self.args.dry_run)
+            result = Yum().check_stuck(dry_run=self.args.dry_run)
             if not result:
-                self.logger.error('StuckYum check failed')
+                self.logger.error('Failed to unstuck yum processes')
 
         # Start main checks.
         for i in range(self.args.max_passes):
@@ -80,6 +80,19 @@ class DcRPM:
                 self.logger.info('Running black box check (rpm -qa)')
                 self.rpmutil.check_rpm_qa()
                 self.logger.info('Black box check OK')
+
+                if self.args.dbpath == '/var/lib/rpm':
+
+                    if self.args.run_yum_clean:
+                        self.logger.info("Running yum clean expire-cache")
+                        Yum().run_yum_clean()
+                        self.logger.info('Yum clean ok')
+
+                else:
+                    self.logger.info(
+                        'Skipping yum sanity checks because custom' +
+                        ' dbpath has been provided'
+                    )
 
                 self.logger.info(
                     'Running silent corruption check (rpm -q rpm)'

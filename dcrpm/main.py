@@ -103,6 +103,11 @@ def parse_args():
         help='Clean stale yum transactions using yum-complete-transaction',
     )
     parser.add_argument(
+        '--run-yum-clean',
+        action='store_true',
+        help='Check for yum clean failures',
+    )
+    parser.add_argument(
         '--yum-complete-transaction-path',
         metavar='PATH',
         default='/usr/sbin/yum-complete-transaction',

@@ -19,14 +19,17 @@ import logging
 import logging.config
 import json
 
+import libfb.py.parutil as parutil
+
 from ..dcrpm import DcRPM
 from ..rpmutil import RPMUtil, RPM_PATH
 from .rpmdb import RPMDB
 
-with open(os.path.join(os.path.dirname(__file__), 'logging.json')) as f:
+
+with open(parutil.get_file_path("pe/dcrpm/py/tests/logging.json")) as f:
     logging.config.dictConfig(json.load(f))
 
-RPMDB.path = os.path.join(os.path.dirname(__file__), 'rpmdbs')
+RPMDB.path = parutil.get_file_path("pe/dcrpm/py/tests/rpmdbs")
 
 
 class DcrpmIntegrationTestBase(unittest.TestCase):

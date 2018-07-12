@@ -122,8 +122,9 @@ class DcRPM:
                 self.logger.error('DB needs recovery')
                 try:
                     self.run_recovery()
+                    self.rpmutil.check_rpmdb_indexes()
                     continue
-                except DBNeedsRebuild:
+                except (DBNeedsRebuild, DBNeedsRecovery):
                     self.logger.error('DB needs rebuild')
                     self.run_rebuild()
                     continue

@@ -26,11 +26,12 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
     def test_rpmdb_fedora26(self, dbpath):
         self.rpmutil.dbpath = dbpath
         self.dcrpm.args.dbpath = dbpath
-        self.dcrpm.run()
+        run_result = self.dcrpm.run()
         self.assertEquals(
             self.action_trace(),
             [],
         )
+        self.assertTrue(run_result)
 
     # TODO: figure out a way to gracefully skip this on c7, T30275604
     # CentOS release 6.9 (Final)
@@ -55,8 +56,24 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
     def test_rpmdb_centos7(self, dbpath):
         self.rpmutil.dbpath = dbpath
         self.dcrpm.args.dbpath = dbpath
-        self.dcrpm.run()
+        run_result = self.dcrpm.run()
         self.assertEquals(
             self.action_trace(),
             [],
         )
+        self.assertTrue(run_result)
+
+    # CentOS Linux release 7.4.1708 (Core)
+    # yum-3.4.3-154.el7.centos.1.noarch
+    # rpm-4.11.3-25.el7.x86_64
+    # rpm-libs-4.11.3-25.el7.x86_64
+    @RPMDB.from_file('rpmdb_centos7_missing_index')
+    def test_rpmdb_centos7_missing_index(self, dbpath):
+        self.rpmutil.dbpath = dbpath
+        self.dcrpm.args.dbpath = dbpath
+        run_result = self.dcrpm.run()
+        self.assertEquals(
+            self.action_trace(),
+            [],
+        )
+        self.assertTrue(run_result)

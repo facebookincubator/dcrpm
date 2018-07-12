@@ -192,18 +192,21 @@ class RPMUtil:
                 )
                 self._poke_index(config['cmd'], config['checks'])
 
-            except DcRPMException:
-                self.logger.info("RPM commands are failing too hard")
-                raise DBNeedsRecovery()
-
             except DBIndexNeedsRebuild:
 
                 self.status_logger.info(RepairAction.INDEX_REBUILD)
 
-                self.logger.info(
-                    "{} index is out of whack, deleting it".format(index)
-                )
-                os.remove(os.path.join(self.dbpath, index))
+                index_path = os.path.join(self.dbpath, index)
+                if os.path.isfile(index_path):
+                    self.logger.info(
+                        "{} index is out of whack, deleting it".format(index)
+                    )
+                    os.remove(index_path)
+                else:
+                    self.logger.info(
+                        "{} index is missing".format(index)
+                    )
+
                 # Run the same command again, which should trigger a rebuild
                 proc = run_with_timeout(
                     config['cmd'], RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
@@ -215,6 +218,10 @@ class RPMUtil:
                     if not check(proc):
                         self.logger.info("Granular index rebuild failed")
                         raise DBNeedsRecovery()
+
+            except DcRPMException:
+                self.logger.info("RPM commands are failing too hard")
+                raise DBNeedsRecovery()
 
     def check_rpm_qa(self):
         # type: () -> None

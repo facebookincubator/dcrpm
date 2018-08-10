@@ -14,7 +14,9 @@ from __future__ import unicode_literals
 
 import logging
 import os
-from os.path import basename, join
+import re
+import signal
+import time
 
 from .util import (
     DBNeedsRebuild,
@@ -340,11 +342,11 @@ class RPMUtil:
         Runs `db_verify` on all rpmdb tables.
         """
         for table in self.tables:
-            if basename(table) in self.blacklist:
+            if os.path.basename(table) in self.blacklist:
                 self.logger.warning("Skipping table '%s', blacklisted", table)
                 continue
 
-            cmd = '{} {}'.format(self.verify_path, join(self.dbpath, table))
+            cmd = '{} {}'.format(self.verify_path, os.path.join(self.dbpath, table))
             try:
                 result = run_with_timeout(
                     cmd,
@@ -369,3 +371,41 @@ class RPMUtil:
         cmd = '{} --cleanup'.format(self.yum_complete_transaction_path)
         self.status_logger.info(RepairAction.CLEAN_YUM_TRANSACTIONS)
         run_with_timeout(cmd, YUM_COMPLETE_TIMEOUT_SEC)
+
+    def kill_spinning_rpm_query_processes(self, proc='/proc'):
+        # type: () -> None
+        """
+        Find and kill any rpm query processes over an hour old.
+        """
+
+        # Fast exit for OS X
+        if not os.access(proc, os.R_OK):
+            return
+
+        for strpid in os.listdir(proc):
+            # Skip non-integer filenames
+            if not strpid.isdigit():
+                continue
+
+            cmdline = os.path.join(proc, strpid, "cmdline")
+            # Make sure our process is an rpm process by checking
+            # /proc/PID/cmdline, and then verify the process is over
+            # an hour old by checking the ctime on the directory
+            # (which, for /proc/PID, is the process creation time).
+            try:
+                with open(cmdline) as fh:
+                    # The \0 is because cmdline is nul separated
+                    # rather than space separated.
+                    if not re.match(r'^(/(usr/)?bin/)?rpm\0.*-q', fh.read()):
+                        continue
+                self.logger.info("Considering pid %s", strpid)
+                st = os.stat(os.path.join(proc, strpid))
+            except (IOError, OSError) as e:
+                self.logger.debug(
+                    "Skipping pid %s; it disappeared (%s)", strpid, str(e)
+                )
+                return
+
+            if time.time() - st.st_mtime > 3600:
+                self.logger.error("Found stale RPM process: %s", strpid)
+                os.kill(int(strpid), signal.SIGKILL)

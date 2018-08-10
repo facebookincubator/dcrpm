@@ -210,3 +210,9 @@ class TestRPMUtil(unittest.TestCase):
         )
         self.assertIn(rpmutil.YUM_COMPLETE_TIMEOUT_SEC, mock_run.call_args[0])
         mock_run.assert_called_once()
+
+    @patch('os.kill')
+    def test_kill_spinning_rpm_query_processes(self, mock_os_kill):
+        fake_proc = 'pe/dcrpm/py/tests/fake_proc'
+        self.rpmutil.kill_spinning_rpm_query_processes(fake_proc)
+        mock_os_kill.assert_called_once_with(1337, 9)

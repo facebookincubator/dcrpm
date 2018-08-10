@@ -71,6 +71,10 @@ class DcRPM:
                     )
                     self.rpmutil.db_stat()
 
+                # Kill any straggler rpm query processes
+                self.logger.info('Searching for spinning rpm query processes')
+                self.rpmutil.kill_spinning_rpm_query_processes()
+
                 # Exercise single indexes
                 self.logger.info('Sanity checking rpmdb indexes')
                 self.rpmutil.check_rpmdb_indexes()

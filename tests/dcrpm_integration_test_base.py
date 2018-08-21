@@ -77,6 +77,7 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
 
         # DcRPM
         self.dcrpm = DcRPM(self.rpmutil, self.args)
+        logging.getLogger('status').handlers[0].trace = []
 
     def action_trace(self):
         # Helper for reading current logger trace

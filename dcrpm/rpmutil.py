@@ -370,7 +370,7 @@ class RPMUtil:
         """
         cmd = '{} --cleanup'.format(self.yum_complete_transaction_path)
         self.status_logger.info(RepairAction.CLEAN_YUM_TRANSACTIONS)
-        run_with_timeout(cmd, YUM_COMPLETE_TIMEOUT_SEC)
+        run_with_timeout(cmd, YUM_COMPLETE_TIMEOUT_SEC, raise_on_nonzero=False)
 
     def kill_spinning_rpm_query_processes(self, proc='/proc'):
         # type: () -> None

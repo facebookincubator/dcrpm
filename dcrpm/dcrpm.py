@@ -103,10 +103,8 @@ class DcRPM:
                         ' dbpath has been provided'
                     )
 
-                self.logger.info(
-                    'Running silent corruption check (rpm -q rpm)'
-                )
-                self.rpmutil.check_rpm_q_rpm()
+                self.logger.info("Running silent corruption check (rpm -q)")
+                self.rpmutil.query("coreutils")
                 self.logger.info('Silent corruption check OK')
 
                 # Check tables (mismatch for -qa vs. -q).

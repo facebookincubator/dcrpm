@@ -55,21 +55,18 @@ class TestRPMUtil(unittest.TestCase):
             '/var/lib/rpm/table3',
         ]
 
-    # check_rpm_q_rpm
+    # query
     @patch(
         run_str,
         return_value=CompletedProcess(
-            stdout='\n'.join(
-                [
-                    "rpm-4.13.0-1.el7.centos.fb4.x86_64",
-                ]
-            ),
-        )
+            stdout='\n'.join(["foo-4.13.0-1.el7.centos.x86_64"]),
+        ),
     )
-    def test_check_rpm_q_rpm_success(self, mock_run):
-        self.rpmutil.check_rpm_q_rpm()
+    def test_query_success(self, mock_run):
+        test_rpm_name = "foo"
+        self.rpmutil.query("foo")
         self.assertIn(
-            '{} --dbpath {} -q rpm'.format(self.rpmpath, self.dbpath),
+            '{} --dbpath {} -q {}'.format(self.rpmpath, self.dbpath, test_rpm_name),
             mock_run.call_args[0]
         )
         self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
@@ -85,9 +82,9 @@ class TestRPMUtil(unittest.TestCase):
             ),
         )
     )
-    def test_check_rpm_q_rpm_failure(self, mock_run):
+    def test_query_failure(self, mock_run):
         with self.assertRaises(DBNeedsRebuild):
-            self.rpmutil.check_rpm_q_rpm()
+            self.rpmutil.query("foo")
 
     # check_rpm_qa
     @patch(

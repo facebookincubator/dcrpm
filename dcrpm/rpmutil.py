@@ -16,6 +16,7 @@ import logging
 import os
 import re
 import signal
+import sys
 import time
 
 from .util import (
@@ -98,6 +99,7 @@ class RPMUtil:
                 raise DBIndexNeedsRebuild
 
     def check_rpmdb_indexes(self):
+        # type: () -> None
         # For each rpmdb file we define a rpm command that blows up
         # on inconsistencies, or returns incorrect results
         # Structure:
@@ -105,6 +107,9 @@ class RPMUtil:
         #     'cmd': 'str', # rpm command
         #     'checks': [], # list of conditions to be met
         # }
+        if sys.platform == "darwin":
+            self.logger.debug("check_rpmdb_indexes is not implemented for darwin")
+            return
 
         rpmdb_indexes = {
             'Basenames': {
@@ -250,22 +255,22 @@ class RPMUtil:
 
         self.logger.debug('Package count: %d', len(packages))
 
-    def check_rpm_q_rpm(self):
-        # type: () -> None
+    def query(self, rpm_name):
+        # type: (str) -> None
         """
-        The most basic sanity check, as `rpm -q rpm` can return out
-        of whack results (like 'perl' >.>)
+        The most basic sanity check, as `rpm -q $rpm_name` can return out of whack
+        results (like 'perl' >.>)
         """
         try:
-            cmd = '{} --dbpath {} -q rpm'.format(RPM_PATH, self.dbpath)
+            cmd = '{} --dbpath {} -q {}'.format(RPM_PATH, self.dbpath, rpm_name)
             result = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC)
             stdout = result.stdout.strip().split()
-            if not len(stdout) == 1 or not stdout[0].startswith('rpm-'):
+            if not len(stdout) == 1 or not stdout[0].startswith('{}-'.format(rpm_name)):
                 raise DBNeedsRebuild()
         except DBNeedsRebuild:
             raise
         except DcRPMException:
-            self.logger.error('rpm -q rpm failed')
+            self.logger.error('rpm -q %s failed', rpm_name)
             raise DBNeedsRecovery()
 
     def recover_db(self):

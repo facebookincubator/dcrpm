@@ -14,7 +14,8 @@ from __future__ import unicode_literals
 
 import unittest
 
-from mock import call, patch
+from mock import Mock, call, patch  # noqa
+from typing import Dict  # noqa
 
 from dcrpm import rpmutil
 from dcrpm.util import (
@@ -23,8 +24,31 @@ from dcrpm.util import (
     DBNeedsRecovery,
     DBNeedsRebuild,
 )
+from tests.mock_process import make_mock_process
 
-run_str = __name__ + '.rpmutil.run_with_timeout'
+BASE = __name__ + ".rpmutil"
+run_str = BASE + ".run_with_timeout"
+
+
+def assert_called_like(mock, call_mapping):
+    # type: (Mock, Dict[str, bool]) -> None
+    """
+    Helper function to assert that `mock` was called with the calls listed in
+    `call_mapping`, which looks like:
+        {
+            "method1": True,
+            "method2": False,
+        }
+    which asserts mock.method1() was called, and mock.method2() was not.
+    """
+    if not call_mapping:
+        return
+    for method, should_have_called in call_mapping.items():
+        attr = getattr(mock, method)
+        if should_have_called:
+            attr.assert_called()
+        else:
+            attr.assert_not_called()
 
 
 class TestRPMUtil(unittest.TestCase):
@@ -208,8 +232,73 @@ class TestRPMUtil(unittest.TestCase):
         self.assertIn(rpmutil.YUM_COMPLETE_TIMEOUT_SEC, mock_run.call_args[0])
         mock_run.assert_called_once()
 
-    @patch('os.kill')
-    def test_kill_spinning_rpm_query_processes(self, mock_os_kill):
-        fake_proc = 'pe/dcrpm/py/tests/fake_proc'
-        self.rpmutil.kill_spinning_rpm_query_processes(fake_proc)
-        mock_os_kill.assert_called_once_with(1337, 9)
+    # kill_spinning_rpm_query_processes
+    @patch("psutil.process_iter")
+    @patch("time.time")
+    def test_kill_spinning_rpm_query_processes_success(self, mock_time, mock_iter):
+        mock_time.return_value = 10000
+        young_rpm = make_mock_process(
+            123, cmdline="rpm -q foo-124.x86_64", create_time=9000,
+        )
+        young_non_rpm = make_mock_process(456, cmdline="java foobar", create_time=8000)
+        young_non_rpm2 = make_mock_process(789, cmdline="ps aux", create_time=8000)
+        old_bin_rpm = make_mock_process(
+            111, cmdline="/bin/rpm -q bar-456.x86_64", create_time=3000,
+        )
+        old_usr_bin_rpm = make_mock_process(
+            222, cmdline="/usr/bin/rpm -something -q bar-456.x86_64", create_time=2000,
+        )
+        old_usr_bin_rpm_wait_throw = make_mock_process(
+            222,
+            cmdline="/usr/bin/rpm -q bar-456.x86_64",
+            create_time=1000,
+            wait_throw=True,
+        )
+        old_usr_bin_rpm_cmdline_throw = make_mock_process(
+            222,
+            cmdline="/usr/bin/rpm -q bar-456.x86_64",
+            create_time=4000,
+            cmdline_throw=True,
+        )
+        young_bin_rpm = make_mock_process(
+            333, cmdline="/bin/rpm -q bar-788.x86_64", create_time=9000,
+        )
+        mock_iter.return_value = [
+            young_rpm,
+            young_non_rpm,
+            young_non_rpm2,
+            old_bin_rpm,
+            old_usr_bin_rpm,
+            old_usr_bin_rpm_wait_throw,
+            old_usr_bin_rpm_cmdline_throw,
+            young_bin_rpm,
+        ]
+
+        self.rpmutil.kill_spinning_rpm_query_processes()
+
+        assert_called_like(
+            young_rpm, {"create_time": True, "send_signal": False, "wait": False},
+        )
+        assert_called_like(
+            young_non_rpm, {"create_time": False, "send_signal": False, "wait": False},
+        )
+        assert_called_like(
+            young_non_rpm2, {"create_time": False, "send_signal": False, "wait": False},
+        )
+        assert_called_like(
+            old_bin_rpm, {"create_time": True, "send_signal": True, "wait": True},
+        )
+        assert_called_like(
+            old_usr_bin_rpm, {"create_time": True, "send_signal": True, "wait": True},
+        )
+        assert_called_like(
+            old_usr_bin_rpm_wait_throw,
+            {"create_time": True, "send_signal": True, "wait": True},
+        )
+        assert_called_like(
+            old_usr_bin_rpm_cmdline_throw,
+            {"create_time": False, "send_signal": False, "wait": False},
+        )
+        assert_called_like(
+            young_bin_rpm, {"create_time": True, "send_signal": False, "wait": False},
+        )

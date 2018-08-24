@@ -29,6 +29,8 @@ from .util import (
     DBIndexNeedsRebuild,
 )
 
+import psutil
+
 RPM_CHECK_TIMEOUT_SEC = 5
 YUM_COMPLETE_TIMEOUT_SEC = 10
 VERIFY_TIMEOUT_SEC = 5
@@ -377,40 +379,42 @@ class RPMUtil:
         self.status_logger.info(RepairAction.CLEAN_YUM_TRANSACTIONS)
         run_with_timeout(cmd, YUM_COMPLETE_TIMEOUT_SEC, raise_on_nonzero=False)
 
-    def kill_spinning_rpm_query_processes(self, proc='/proc'):
-        # type: () -> None
+    def kill_spinning_rpm_query_processes(
+        self,
+        kill_after_seconds=3600,  # type: int
+        kill_timeout=5,  # type: int
+    ):
+        # type: (...) -> None
         """
-        Find and kill any rpm query processes over an hour old.
+        Find and kill any rpm query processes over an hour old by looking explicitly for
+        `rpm -q`.
         """
-
-        # Fast exit for OS X
-        if not os.access(proc, os.R_OK):
-            return
-
-        for strpid in os.listdir(proc):
-            # Skip non-integer filenames
-            if not strpid.isdigit():
-                continue
-
-            cmdline = os.path.join(proc, strpid, "cmdline")
-            # Make sure our process is an rpm process by checking
-            # /proc/PID/cmdline, and then verify the process is over
-            # an hour old by checking the ctime on the directory
-            # (which, for /proc/PID, is the process creation time).
+        for proc in psutil.process_iter():
             try:
-                with open(cmdline) as fh:
-                    # The \0 is because cmdline is nul separated
-                    # rather than space separated.
-                    if not re.match(r'^(/(usr/)?bin/)?rpm\0.*-q', fh.read()):
-                        continue
-                self.logger.info("Considering pid %s", strpid)
-                st = os.stat(os.path.join(proc, strpid))
-            except (IOError, OSError) as e:
-                self.logger.debug(
-                    "Skipping pid %s; it disappeared (%s)", strpid, str(e)
-                )
-                return
+                cmd = proc.cmdline()
+                # Valid command
+                if not cmd or len(cmd) < 2:
+                    continue
+                # Looks like rpm
+                if not (re.match(r"(/(usr/)?bin/)?rpm", cmd[0]) and "-q" in cmd):
+                    continue
 
-            if time.time() - st.st_mtime > 3600:
-                self.logger.error("Found stale RPM process: %s", strpid)
-                os.kill(int(strpid), signal.SIGKILL)
+                self.logger.info("Considering pid %s", proc.pid)
+                ctime = proc.create_time()
+
+                if time.time() - ctime > kill_after_seconds:
+                    self.logger.error(
+                        "Found stale rpm process: (%d) %s", proc.pid, ' '.join(cmd)
+                    )
+                    proc.send_signal(signal.SIGKILL)
+                    proc.wait(timeout=kill_timeout)
+
+            except psutil.NoSuchProcess:
+                self.logger.warning("Skipping pid %d, it disappeared", proc.pid)
+                continue
+            except psutil.TimeoutExpired:
+                self.logger.warning(
+                    "Timed out after %ds waiting for pid %d",
+                    kill_timeout,
+                    proc.pid,
+                )

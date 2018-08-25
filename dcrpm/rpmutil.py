@@ -412,6 +412,9 @@ class RPMUtil:
             except psutil.NoSuchProcess:
                 self.logger.warning("Skipping pid %d, it disappeared", proc.pid)
                 continue
+            except psutil.AccessDenied:
+                self.logger.warning("Skipping pid %d, cannot access it", proc.pid)
+                continue
             except psutil.TimeoutExpired:
                 self.logger.warning(
                     "Timed out after %ds waiting for pid %d",

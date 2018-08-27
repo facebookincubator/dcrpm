@@ -7,17 +7,15 @@
 # file in the root directory of this source tree.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import math
-from mock import Mock, call, patch
 import signal
 import subprocess
 import time
 import unittest
+
+from mock import Mock, call, patch
 
 from dcrpm.util import (
     DcRPMException,
@@ -30,11 +28,7 @@ from dcrpm.util import (
 
 
 def make_mock_popen(
-    stdout='',
-    stderr='',
-    returncode=0,
-    communicate_raise=False,
-    terminate_raise=False,
+    stdout="", stderr="", returncode=0, communicate_raise=False, terminate_raise=False
 ):
     # type: (str, str, int, bool, bool) -> Mock
     """
@@ -42,23 +36,21 @@ def make_mock_popen(
     Popen.communicate.
     """
     mock_popen_obj = Mock()
-    config = {
-        'poll.return_value': returncode,
-    }
+    config = {"poll.return_value": returncode}
     if communicate_raise:
-        config['communicate.side_effect'] = TimeoutExpired()
+        config["communicate.side_effect"] = TimeoutExpired()
     else:
-        config['communicate.return_value'] = (stdout, stderr)
+        config["communicate.return_value"] = (stdout, stderr)
     if terminate_raise:
-        config['terminate.side_effect'] = TimeoutExpired()
+        config["terminate.side_effect"] = TimeoutExpired()
     mock_popen_obj.configure_mock(**config)
     return mock_popen_obj
 
 
 class TestUtil(unittest.TestCase):
     # call_with_timeout
-    @patch('signal.signal')
-    @patch('signal.alarm')
+    @patch("signal.signal")
+    @patch("signal.alarm")
     def test_call_with_timeout_success(self, mock_alarm, mock_signal):
         result = call_with_timeout(math.floor, 2, args=[2.5])
         self.assertEqual(result, 2.0)
@@ -74,51 +66,47 @@ class TestUtil(unittest.TestCase):
         self.assertIsNone(result)
 
     # run_with_timeout
-    @patch('subprocess.Popen', return_value=make_mock_popen())
+    @patch("subprocess.Popen", return_value=make_mock_popen())
     def test_run_with_timeout_success(self, mock_popen):
-        result = run_with_timeout('/bin/true', 5)
+        result = run_with_timeout("/bin/true", 5)
         self.assertEqual(result.returncode, 0)
         mock_popen.assert_called_once_with(
-            '/bin/true',
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            "/bin/true", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
 
-    @patch('subprocess.Popen')
+    @patch("subprocess.Popen")
     def test_run_with_timeout_timeout(self, mock_popen):
         mock_popen.return_value = make_mock_popen(communicate_raise=True)
         with self.assertRaises(DcRPMException):
-            run_with_timeout('/bin/true', 5)
+            run_with_timeout("/bin/true", 5)
         mock_popen.return_value.kill.assert_not_called()
 
-    @patch('subprocess.Popen')
+    @patch("subprocess.Popen")
     def test_run_with_timeout_terminates_on_timeout(self, mock_popen):
         mock_popen.return_value = make_mock_popen(communicate_raise=True)
         with self.assertRaises(DcRPMException):
-            run_with_timeout('/bin/true', 5)
+            run_with_timeout("/bin/true", 5)
         mock_popen.return_value.terminate.assert_called()
         mock_popen.return_value.kill.assert_not_called()
 
-    @patch('subprocess.Popen')
+    @patch("subprocess.Popen")
     def test_run_with_timeout_kills_on_terminate_timeout(self, mock_popen):
         mock_popen.return_value = make_mock_popen(
-            communicate_raise=True,
-            terminate_raise=True,
+            communicate_raise=True, terminate_raise=True
         )
         with self.assertRaises(DcRPMException):
-            run_with_timeout('/bin/true', 5)
+            run_with_timeout("/bin/true", 5)
         mock_popen.return_value.terminate.assert_called()
         mock_popen.return_value.kill.assert_called()
 
-    @patch('subprocess.Popen', return_value=make_mock_popen(returncode=1))
+    @patch("subprocess.Popen", return_value=make_mock_popen(returncode=1))
     def test_run_with_timeout_raise_on_nonzero(self, mock_popen):
         with self.assertRaises(DcRPMException):
-            run_with_timeout('/bin/true', 5)
+            run_with_timeout("/bin/true", 5)
 
-    @patch('subprocess.Popen', return_value=make_mock_popen(returncode=1))
+    @patch("subprocess.Popen", return_value=make_mock_popen(returncode=1))
     def test_run_with_timeout_no_raise_on_nonzero(self, mock_popen):
-        result = run_with_timeout('/bin/true', 5, raise_on_nonzero=False)
+        result = run_with_timeout("/bin/true", 5, raise_on_nonzero=False)
         self.assertEqual(result.returncode, 1)
 
     # kindly_end

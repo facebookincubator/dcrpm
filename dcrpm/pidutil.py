@@ -7,10 +7,7 @@
 # file in the root directory of this source tree.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import os
@@ -18,6 +15,7 @@ import os
 import psutil
 
 from .util import TimeoutExpired, call_with_timeout
+
 
 DEFAULT_TIMEOUT = 5  # seconds
 MIN_PID = 2  # Don't kill init/launchd or kernel_task
@@ -34,15 +32,13 @@ def pids_holding_file(path):
     for proc in psutil.process_iter():
         try:
             pinfo = call_with_timeout(
-                proc.as_dict,
-                DEFAULT_TIMEOUT,
-                kwargs={'attrs': ['pid', 'open_files']},
+                proc.as_dict, DEFAULT_TIMEOUT, kwargs={"attrs": ["pid", "open_files"]}
             )
         except (psutil.NoSuchProcess, TimeoutExpired):
             continue
 
         # Sometimes open_files can be None.
-        open_files = pinfo.get('open_files', [])
+        open_files = pinfo.get("open_files", [])
         if not open_files:
             continue
 
@@ -64,8 +60,8 @@ def pidfile_info(pidfile):
     if pid <= 1:
         # Negative PIDs lead to sadness
         # https://rachelbythebay.com/w/2014/08/19/fork/
-        logger.error('Rejecting crazy pid value')
-        raise ValueError('Invalid pid value')
+        logger.error("Rejecting crazy pid value")
+        raise ValueError("Invalid pid value")
     mtime = int(os.stat(pidfile).st_mtime)
     return (pid, mtime)
 
@@ -80,19 +76,19 @@ def send_signal(proc, sig, timeout=DEFAULT_TIMEOUT):
     # Don't accidentally signal core system processes.
     pid = proc.pid
     if pid < MIN_PID:
-        logger.warning('Refusing to kill pid %d', pid)
+        logger.warning("Refusing to kill pid %d", pid)
         return False
 
-    signame = str(sig).split('.')[-1]
-    logger.info('Sending signal %s to pid %d', signame, pid)
+    signame = str(sig).split(".")[-1]
+    logger.info("Sending signal %s to pid %d", signame, pid)
     try:
         proc.send_signal(sig)
         proc.wait(timeout=timeout)
     except psutil.NoSuchProcess:
-        logger.debug('Pid %d does not exist', pid)
+        logger.debug("Pid %d does not exist", pid)
         return False
     except psutil.TimeoutExpired:
-        logger.debug('Timed out after %ds waiting for %d', timeout, pid)
+        logger.debug("Timed out after %ds waiting for %d", timeout, pid)
         return False
 
     return True
@@ -104,7 +100,8 @@ def send_signals(procs, signal, timeout=DEFAULT_TIMEOUT):
     Sends signal to all processes in `procs`. Returns whether anything was
     successfully signaled.
     """
-    return any([send_signal(p, signal, timeout) for p in procs])
+    was_killed = [send_signal(p, signal, timeout) for p in procs]
+    return any(was_killed)
 
 
 def process(pid):
@@ -116,5 +113,5 @@ def process(pid):
     try:
         return psutil.Process(pid)
     except psutil.NoSuchProcess:
-        logging.error('Pid %d does not exist or is no longer active', pid)
+        logging.error("Pid %d does not exist or is no longer active", pid)
         return None

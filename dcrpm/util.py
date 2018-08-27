@@ -7,14 +7,12 @@
 # file in the root directory of this source tree.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import signal
 import subprocess
+
 
 END_TIMEOUT = 5  # seconds
 
@@ -25,6 +23,7 @@ class StatusCode:
     """
     Command return codes codified
     """
+
     SUCCESS = 0
     SEGFAULT = -11
 
@@ -33,28 +32,24 @@ class DcRPMException(Exception):
     """
     Exception to handle generic operation failures in dcrpm-py.
     """
-    pass
 
 
 class DBNeedsRecovery(DcRPMException):
     """
     Condition indicating the RPM DB needs to be recovered.
     """
-    pass
 
 
 class DBIndexNeedsRebuild(DcRPMException):
     """
     Single BDB index might need a rebuild
     """
-    pass
 
 
 class DBNeedsRebuild(DcRPMException):
     """
     Condition indicating the RPM DB needs to be rebuilt.
     """
-    pass
 
 
 class TimeoutExpired(Exception):
@@ -62,7 +57,6 @@ class TimeoutExpired(Exception):
     Simple exception shim indicating a subprocess timeout because Python 2
     doesn't have this.
     """
-    pass
 
 
 class CompletedProcess:
@@ -71,7 +65,7 @@ class CompletedProcess:
     subprocesses.
     """
 
-    def __init__(self, stdout='', stderr='', returncode=0):
+    def __init__(self, stdout="", stderr="", returncode=0):
         # type: (str, str, int) -> None:
         self.stdout = stdout
         self.stderr = stderr
@@ -83,6 +77,7 @@ class RepairAction:
     Enum of different repair actions that dcrpm can perform. Used for
     classifying failures in a more programmatic fashion.
     """
+
     NO_ACTION = 0
     DB_RECOVERY = 1
     TABLE_REBUILD = 2
@@ -96,19 +91,20 @@ class Result:
     """
     Enum representing whole program status.
     """
+
     OK = 0
     FAILED = 1
 
 
 # Human readable names for different cleanup actions.
 ACTION_NAMES = {
-    RepairAction.NO_ACTION: 'no_action',
-    RepairAction.DB_RECOVERY: 'db_recovery',
-    RepairAction.TABLE_REBUILD: 'table_rebuild',
-    RepairAction.KILL_LOCK_PIDS: 'kill_lock_pids',
-    RepairAction.STUCK_YUM: 'stuck_yum',
-    RepairAction.CLEAN_YUM_TRANSACTIONS: 'cleanup_yum_transactions',
-    RepairAction.INDEX_REBUILD: 'index_rebuild',
+    RepairAction.NO_ACTION: "no_action",
+    RepairAction.DB_RECOVERY: "db_recovery",
+    RepairAction.TABLE_REBUILD: "table_rebuild",
+    RepairAction.KILL_LOCK_PIDS: "kill_lock_pids",
+    RepairAction.STUCK_YUM: "stuck_yum",
+    RepairAction.CLEAN_YUM_TRANSACTIONS: "cleanup_yum_transactions",
+    RepairAction.INDEX_REBUILD: "index_rebuild",
 }
 
 
@@ -159,29 +155,26 @@ def run_with_timeout(cmd, timeout, raise_on_nonzero=True):
     Runs command `cmd` with timeout `timeout`. If `raise_on_nonzero` is True,
     raises a DcRPMException if `cmd` exits with a nonzero status.
     """
-    _logger.debug('Running %s', cmd)
+    _logger.debug("Running %s", cmd)
     cmdname = cmd.split()[0]
     proc = subprocess.Popen(
-        cmd,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     try:
         stdout, stderr = call_with_timeout(proc.communicate, timeout)
     except TimeoutExpired:
-        msg = '%s timed out after %d' % (cmdname, timeout)
+        msg = "%s timed out after %d" % (cmdname, timeout)
         _logger.error(msg)
 
         # Be nice about ending the process.
-        _logger.info('Terminating %s', cmdname)
+        _logger.info("Terminating %s", cmdname)
         kindly_end(proc)
         raise DcRPMException(msg)
 
     # Now get returncode.
     rc = proc.poll()
     if raise_on_nonzero and rc != 0:
-        msg = '{} returned nonzero exit code ({})'.format(cmdname, rc)
+        msg = "{} returned nonzero exit code ({})".format(cmdname, rc)
         _logger.error(msg)
         raise DcRPMException(msg)
 
@@ -195,13 +188,13 @@ def kindly_end(proc, timeout=END_TIMEOUT):
     still running, SIGKILL.
     """
     try:
-        _logger.info('Sending SIGTERM to %d', proc.pid)
+        _logger.info("Sending SIGTERM to %d", proc.pid)
         proc.terminate()
         call_with_timeout(proc.wait, timeout)
     except TimeoutExpired:
-        _logger.warning('Could not SIGTERM %d, sending SIGKILL', proc.pid)
+        _logger.warning("Could not SIGTERM %d, sending SIGKILL", proc.pid)
         try:
             proc.kill()
             call_with_timeout(proc.wait, timeout)
         except TimeoutExpired:
-            _logger.error('Could not SIGKILL %d, good luck', proc.pid)
+            _logger.error("Could not SIGKILL %d, good luck", proc.pid)

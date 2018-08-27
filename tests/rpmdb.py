@@ -6,26 +6,23 @@
 # file in the root directory of this source tree.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-import tarfile
 import os
 import shutil
+import tarfile
 import tempfile
 
 
 class RPMDB:
 
-    path = ''
+    path = ""
 
     @classmethod
     def _decorator(cls, temp_dir):
         def _inner_decorator(function):
             def wrapper(*args, **kwargs):
-                args += (os.path.join(temp_dir, 'rpm'),)
+                args += (os.path.join(temp_dir, "rpm"),)
                 result = function(*args, **kwargs)
                 try:
                     # Try cleaning up the temp dir
@@ -33,15 +30,14 @@ class RPMDB:
                 except Exception:
                     pass
                 return result
+
             return wrapper
+
         return _inner_decorator
 
     @classmethod
     def _extract_local_tarfile(cls, filename):
-        file = os.path.join(
-            cls.path,
-            "{}.tar.gz".format(filename)
-        )
+        file = os.path.join(cls.path, "{}.tar.gz".format(filename))
         if os.path.isfile(file) and tarfile.is_tarfile(file):
             try:
                 temp_dir = tempfile.mkdtemp()

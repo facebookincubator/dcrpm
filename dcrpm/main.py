@@ -28,139 +28,121 @@ DEFAULT_MAX_PASSES = 5
 # Taken from the original C++ dcrpm
 DEFAULT_MIN_REQUIRED_FREE_SPACE = 150 * 1048576
 
-LOG_FORMAT = '%(asctime)s %(levelname)s [%(module)s.%(funcName)s]: %(message)s'
+LOG_FORMAT = "%(asctime)s %(levelname)s [%(module)s.%(funcName)s]: %(message)s"
 DEFAULT_LOGGING_CONFIG = {
-    'version': 1,
-    'formatters': {
-        'standard': {
-            'format': LOG_FORMAT,
+    "version": 1,
+    "formatters": {"standard": {"format": LOG_FORMAT}},
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "formatter": "standard",
+            "class": "logging.StreamHandler",
+        },
+        "file": {
+            "level": "DEBUG",
+            "formatter": "standard",
+            "class": "logging.FileHandler",
+            "filename": "/var/log/dcrpm.log",
+        },
+        "forensic_logger": {
+            "level": "DEBUG",
+            "formatter": "standard",
+            "class": "pe.dcrpm.py.forensic_logger.ForensicLogger",
+            "logdir": "/tmp",
         },
     },
-    'handlers': {
-        'console': {
-            'level': 'INFO',
-            'formatter': 'standard',
-            'class': 'logging.StreamHandler',
-        },
-        'file': {
-            'level': 'DEBUG',
-            'formatter': 'standard',
-            'class': 'logging.FileHandler',
-            'filename': '/var/log/dcrpm.log',
-        },
-        'forensic_logger': {
-            'level': 'DEBUG',
-            'formatter': 'standard',
-            'class': 'pe.dcrpm.py.forensic_logger.ForensicLogger',
-            'logdir': '/tmp',
-        },
-    },
-    'loggers': {
-        '': {
-            'handlers': ['console', 'file'],
-        },
-        'status': {
-            'handlers': ['console', 'forensic_logger'],
-        },
+    "loggers": {
+        "": {"handlers": ["console", "file"]},
+        "status": {"handlers": ["console", "forensic_logger"]},
     },
 }
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        prog='dcrpm',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        prog="dcrpm", formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        '--version',
-        action='version', version='%(prog)s ' + __version__
+        "--version", action="version", version="%(prog)s " + __version__
     )
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Run in dry-run mode, do not execute any operations',
+        "--dry-run",
+        action="store_true",
+        help="Run in dry-run mode, do not execute any operations",
     )
     parser.add_argument(
-        '--check-stuck-yum',
-        action='store_true',
-        help='Run stuck yum check and remediation',
+        "--check-stuck-yum",
+        action="store_true",
+        help="Run stuck yum check and remediation",
     )
     parser.add_argument(
-        '--recover-path',
-        metavar='PATH',
-        default='/bin/db_recover',
-        help='Path to db_recover',
+        "--recover-path",
+        metavar="PATH",
+        default="/bin/db_recover",
+        help="Path to db_recover",
     )
     parser.add_argument(
-        '--verify-path',
-        metavar='PATH',
-        default='/bin/db_verify',
-        help='Path to db_verify',
+        "--verify-path",
+        metavar="PATH",
+        default="/bin/db_verify",
+        help="Path to db_verify",
     )
     parser.add_argument(
-        '--clean-yum-transactions',
-        action='store_true',
-        help='Clean stale yum transactions using yum-complete-transaction',
+        "--clean-yum-transactions",
+        action="store_true",
+        help="Clean stale yum transactions using yum-complete-transaction",
     )
     parser.add_argument(
-        '--run-yum-clean',
-        action='store_true',
-        help='Check for yum clean failures',
+        "--run-yum-clean", action="store_true", help="Check for yum clean failures"
     )
     parser.add_argument(
-        '--run-yum-check',
-        action='store_true',
+        "--run-yum-check",
+        action="store_true",
         help='Use "yum check" to find rpmdb problems',
     )
     parser.add_argument(
-        '--yum-complete-transaction-path',
-        metavar='PATH',
-        default='/usr/sbin/yum-complete-transaction',
-        help='Path to yum-complete-transaction',
+        "--yum-complete-transaction-path",
+        metavar="PATH",
+        default="/usr/sbin/yum-complete-transaction",
+        help="Path to yum-complete-transaction",
     )
     parser.add_argument(
-        '--dbpath',
-        metavar='PATH',
-        default='/var/lib/rpm',
-        help='Path to RPM database',
+        "--dbpath", metavar="PATH", default="/var/lib/rpm", help="Path to RPM database"
     )
     parser.add_argument(
-        '--max-passes',
+        "--max-passes",
         type=int,
-        metavar='N',
+        metavar="N",
         default=DEFAULT_MAX_PASSES,
-        help='Run N passes of checks/remediations',
+        help="Run N passes of checks/remediations",
     )
     parser.add_argument(
-        '--minspace',
+        "--minspace",
         type=int,
-        metavar='BYTES',
+        metavar="BYTES",
         default=DEFAULT_MIN_REQUIRED_FREE_SPACE,
-        help='Minimum free space in bytes required',
+        help="Minimum free space in bytes required",
     )
     parser.add_argument(
-        '-v',
-        '--verbose',
-        action='store_true',
-        help='Log debug messages',
+        "-v", "--verbose", action="store_true", help="Log debug messages"
     )
     parser.add_argument(
-        '-f',
-        '--forensic',
-        action='store_true',
-        help='Collect debug output for forensic investigations',
+        "-f",
+        "--forensic",
+        action="store_true",
+        help="Collect debug output for forensic investigations",
     )
     parser.add_argument(
-        '-l',
-        '--logging-config-file',
-        metavar='FILE',
-        help='JSON file containing python logger configuration',
+        "-l",
+        "--logging-config-file",
+        metavar="FILE",
+        help="JSON file containing python logger configuration",
     )
     parser.add_argument(
-        '--blacklist',
-        nargs='+',
-        default=['Filedigests', 'Obsoletename', 'Provideversion'],
-        help='Databases to blacklist from db_verify',
+        "--blacklist",
+        nargs="+",
+        default=["Filedigests", "Obsoletename", "Provideversion"],
+        help="Databases to blacklist from db_verify",
     )
     return parser.parse_args()
 
@@ -190,10 +172,10 @@ def main():
         rc = DcRPM(rpmutil, args).run()
         return int(not (rc))
     except Exception as e:
-        msg = 'exception: {}'.format(e)
-        logging.getLogger('status').error('exception')
+        msg = "exception: {}".format(e)
+        logging.getLogger("status").error("exception")
         logging.getLogger().error(msg)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

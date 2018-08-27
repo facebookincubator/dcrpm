@@ -19,7 +19,7 @@ from setuptools import setup
 
 import dcrpm.__version__
 
-with open(os.path.join(os.path.dirname(__file__), 'README.md')) as f:
+with open(os.path.join(os.path.dirname(__file__), "README.md")) as f:
     long_description = f.read()
 
 
@@ -27,8 +27,8 @@ try:
     # convert readme to rst so it will be displayed on pypi (not critical so
     # it's ok to not do it)
     import pypandoc
-    new_long_description = pypandoc.convert_text(
-        long_description, 'rst', format='md')
+
+    new_long_description = pypandoc.convert_text(long_description, "rst", format="md")
     assert new_long_description
     long_description = new_long_description
 except Exception:
@@ -37,12 +37,12 @@ except Exception:
 
 
 setup(
-    name='dcrpm',
+    name="dcrpm",
     version=dcrpm.__version__,
-    packages=['dcrpm'],
-    author='Sean Karlage',
-    author_email='skarlage@fb.com',
-    url='https://github.com/facebookincubator/dcrpm',
+    packages=["dcrpm"],
+    author="Sean Karlage",
+    author_email="skarlage@fb.com",
+    url="https://github.com/facebookincubator/dcrpm",
     classifiers=[
         "Operating System :: POSIX :: Linux",
         "Intended Audience :: Developers",
@@ -55,20 +55,12 @@ setup(
         "Topic :: Utilities",
         "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
     ],
-    keywords=['dcrpm', 'rpm', 'yum', 'db_recover', 'db4', 'bdb'],
-    description='A tool to detect and correct common issues around RPM database corruption.',
+    keywords=["dcrpm", "rpm", "yum", "db_recover", "db4", "bdb"],
+    description="A tool to detect and correct common issues around RPM database corruption.",
     long_description=long_description,
-    license='GPLv2',
-    install_requires=[
-      'psutil',
-    ],
-    tests_require=[
-      'mock',
-    ],
-    test_suite='tests',
-    entry_points={
-      'console_scripts': [
-        'dcrpm=dcrpm.main:main',
-      ],
-    },
+    license="GPLv2",
+    install_requires=["psutil"],
+    tests_require=["mock"],
+    test_suite="tests",
+    entry_points={"console_scripts": ["dcrpm=dcrpm.main:main"]},
 )

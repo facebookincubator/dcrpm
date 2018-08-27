@@ -7,10 +7,7 @@
 # file in the root directory of this source tree.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import os
@@ -19,17 +16,18 @@ import signal
 import sys
 import time
 
+import psutil
+
 from .util import (
+    DBIndexNeedsRebuild,
     DBNeedsRebuild,
     DBNeedsRecovery,
     DcRPMException,
     RepairAction,
-    run_with_timeout,
     StatusCode,
-    DBIndexNeedsRebuild,
+    run_with_timeout,
 )
 
-import psutil
 
 RPM_CHECK_TIMEOUT_SEC = 5
 YUM_COMPLETE_TIMEOUT_SEC = 10
@@ -37,8 +35,8 @@ VERIFY_TIMEOUT_SEC = 5
 RECOVER_TIMEOUT_SEC = 90
 REBUILD_TIMEOUT_SEC = 300
 MIN_ACCEPTABLE_PKG_COUNT = 50
-RPM_PATH = '/bin/rpm'
-DB_STAT_PATH = '/bin/db_stat'
+RPM_PATH = "/bin/rpm"
+DB_STAT_PATH = "/bin/db_stat"
 
 
 class RPMUtil:
@@ -63,7 +61,7 @@ class RPMUtil:
         self.blacklist = blacklist
         self.forensic = forensic
         self.logger = logging.getLogger()
-        self.status_logger = logging.getLogger('status')
+        self.status_logger = logging.getLogger("status")
         self.tables = [t for t in os.listdir(self.dbpath) if str(t).istitle()]
 
     def db_stat(self):
@@ -73,152 +71,140 @@ class RPMUtil:
         environment.
         """
         try:
-            cmd = '{} -CA -h {}'.format(DB_STAT_PATH, self.dbpath)
-            ds = run_with_timeout(
-                cmd, RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
-            )
+            cmd = "{} -CA -h {}".format(DB_STAT_PATH, self.dbpath)
+            ds = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False)
             if ds.returncode > 0:
                 # Sometimes db_stat can fail, let's try to preserve that
                 debug = ds.stderr
             else:
                 debug = ds.stdout
-
-            self.status_logger.debug(
-                debug, extra={'key': 'db_stat'}
-            )
+            self.status_logger.debug(debug, extra={"key": "db_stat"})
         except DcRPMException:
             # This is debug command, we're ignoring failures
-            self.logger.error('db_stat -CA failed')
+            self.logger.error("db_stat -CA failed")
 
     def _poke_index(self, cmd, checks):
-        # Run cmd, and ensure all checks are True
-        # Raise DBIndexNeedsRebuild otherwise
-        proc = run_with_timeout(
-            cmd, RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
-        )
+        """
+        Run cmd, and ensure all checks are True. Raise DBIndexNeedsRebuild otherwise
+        """
+        proc = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False)
         for check in checks:
             if not check(proc):
                 raise DBIndexNeedsRebuild
 
     def check_rpmdb_indexes(self):
         # type: () -> None
-        # For each rpmdb file we define a rpm command that blows up
-        # on inconsistencies, or returns incorrect results
-        # Structure:
-        # 'name_of_file': {
-        #     'cmd': 'str', # rpm command
-        #     'checks': [], # list of conditions to be met
-        # }
+        """
+        For each rpmdb file we define a rpm command that blows up on inconsistencies,
+        or returns incorrect results. Structure:
+        'name_of_file': {
+            'cmd': 'str', # rpm command
+            'checks': [], # list of conditions to be met
+        }
+        """
         if sys.platform == "darwin":
             self.logger.debug("check_rpmdb_indexes is not implemented for darwin")
             return
 
         rpmdb_indexes = {
-            'Basenames': {
-                'cmd': '{} -qf {} --dbpath {}'.format(
-                    RPM_PATH, RPM_PATH, self.dbpath
-                ),
-                'checks': [
+            "Basenames": {
+                "cmd": "{} -qf {} --dbpath {}".format(RPM_PATH, RPM_PATH, self.dbpath),
+                "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) == 1,
-                    lambda proc: proc.stdout.splitlines()[0].startswith('rpm-'),
+                    lambda proc: proc.stdout.splitlines()[0].startswith("rpm-"),
                 ],
             },
-            'Conflictname': {
-                'cmd': '{} -q --conflicts initscripts --dbpath {}'.format(
+            "Conflictname": {
+                "cmd": "{} -q --conflicts initscripts --dbpath {}".format(
                     RPM_PATH, self.dbpath
                 ),
-                'checks': [
+                "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) > 3,
                 ],
             },
-            'Obsoletename': {
-                'cmd': '{} -q --obsoletes coreutils --dbpath {}'.format(
+            "Obsoletename": {
+                "cmd": "{} -q --obsoletes coreutils --dbpath {}".format(
                     RPM_PATH, self.dbpath
                 ),
-                'checks': [
+                "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) > 2,
                 ],
             },
-            'Providename': {
-                'cmd': '{} -q --whatprovides rpm --dbpath {}'.format(
+            "Providename": {
+                "cmd": "{} -q --whatprovides rpm --dbpath {}".format(
                     RPM_PATH, self.dbpath
                 ),
-                'checks': [
+                "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) == 1,
-                    lambda proc: proc.stdout.splitlines()[0].startswith('rpm-'),
+                    lambda proc: proc.stdout.splitlines()[0].startswith("rpm-"),
                 ],
             },
-            'Requirename': {
-                'cmd': '{} -q --whatrequires rpm --dbpath {}'.format(
+            "Requirename": {
+                "cmd": "{} -q --whatrequires rpm --dbpath {}".format(
                     RPM_PATH, self.dbpath
                 ),
-                'checks': [
+                "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) >= 1,
-                    lambda proc: any(line.startswith('rpm-') for
-                        line in proc.stdout.splitlines()),
+                    lambda proc: any(
+                        line.startswith("rpm-") for line in proc.stdout.splitlines()
+                    ),
                 ],
             },
-            'Recommendname': None,
-            'Dirnames': None,
-            'Group': None,
-            'Name': None,
-            'Installtid': None,
-            'Enhancename': None,  # rarely used
-            'Filetriggername': None,  # rarely used
-            'Suggestname': None,  # rarely used
-            'Supplementname': None,  # rarely used
-            'Transfiletriggername': None,  # rarely used
-            'Triggername': None,  # rarely used
+            "Recommendname": None,
+            "Dirnames": None,
+            "Group": None,
+            "Name": None,
+            "Installtid": None,
+            "Enhancename": None,  # rarely used
+            "Filetriggername": None,  # rarely used
+            "Suggestname": None,  # rarely used
+            "Supplementname": None,  # rarely used
+            "Transfiletriggername": None,  # rarely used
+            "Triggername": None,  # rarely used
         }
 
         # Checks for Packages db corruption
         post_checks = [
-            lambda proc: not any('cannot open Packages database' in
-                line for line in proc.stderr.splitlines()),
-            lambda proc: any('missing index' in line for line
-                in proc.stderr.splitlines()),
+            lambda proc: not any(
+                "cannot open Packages database" in line
+                for line in proc.stderr.splitlines()
+            ),
+            lambda proc: any(
+                "missing index" in line for line in proc.stderr.splitlines()
+            ),
         ]
 
         for index, config in rpmdb_indexes.items():
             try:
-
+                # Skip over non existing indexes
                 if not os.path.join(self.dbpath, index):
-                    # Skip over non existing indexes
                     self.logger.info("{} does not exist".format(index))
                     continue
 
+                # Skip over indexes with no defined checks / conditions
                 if not config:
-                    # Skip over indexes with no defined checks / conditions
                     continue
 
-                self.logger.info(
-                    "Attempting to selectively poke at {} index".format(index)
-                )
-                self._poke_index(config['cmd'], config['checks'])
+                self.logger.info("Attempting to selectively poke at %s index", index)
+                self._poke_index(config["cmd"], config["checks"])
 
             except DBIndexNeedsRebuild:
-
                 self.status_logger.info(RepairAction.INDEX_REBUILD)
-
                 index_path = os.path.join(self.dbpath, index)
                 if os.path.isfile(index_path):
-                    self.logger.info(
-                        "{} index is out of whack, deleting it".format(index)
-                    )
+                    self.logger.info("%s index is out of whack, deleting it", index)
                     os.remove(index_path)
                 else:
-                    self.logger.info(
-                        "{} index is missing".format(index)
-                    )
+                    self.logger.info("%s index is missing", index)
 
                 # Run the same command again, which should trigger a rebuild
                 proc = run_with_timeout(
-                    config['cmd'], RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
+                    config["cmd"], RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
                 )
 
                 # Sometimes single index rebuilds don't work, as rpm fails to
@@ -235,27 +221,26 @@ class RPMUtil:
     def check_rpm_qa(self):
         # type: () -> None
         """
-        Runs `rpm -qa` which serves as a good proxy check for whether bdb needs
-        recovery.
+        Runs `rpm -qa` which serves as a good proxy check for whether bdb needs recovery
         """
         try:
-            cmd = '{} --dbpath {} -qa'.format(RPM_PATH, self.dbpath)
+            cmd = "{} --dbpath {} -qa".format(RPM_PATH, self.dbpath)
             result = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC)
         except DcRPMException:
-            self.logger.error('rpm -qa failed')
-            self.status_logger.warning('initial_db_check_fail')
+            self.logger.error("rpm -qa failed")
+            self.status_logger.warning("initial_db_check_fail")
             raise DBNeedsRecovery()
 
         packages = result.stdout.strip().split()
         if len(packages) < MIN_ACCEPTABLE_PKG_COUNT:
             self.logger.error(
-                'rpm package count seems too low; saw %d, expected at least %d',
+                "rpm package count seems too low; saw %d, expected at least %d",
                 len(packages),
                 MIN_ACCEPTABLE_PKG_COUNT,
             )
             raise DBNeedsRecovery()
 
-        self.logger.debug('Package count: %d', len(packages))
+        self.logger.debug("Package count: %d", len(packages))
 
     def query(self, rpm_name):
         # type: (str) -> None
@@ -264,15 +249,15 @@ class RPMUtil:
         results (like 'perl' >.>)
         """
         try:
-            cmd = '{} --dbpath {} -q {}'.format(RPM_PATH, self.dbpath, rpm_name)
+            cmd = "{} --dbpath {} -q {}".format(RPM_PATH, self.dbpath, rpm_name)
             result = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC)
             stdout = result.stdout.strip().split()
-            if not len(stdout) == 1 or not stdout[0].startswith('{}-'.format(rpm_name)):
+            if not len(stdout) == 1 or not stdout[0].startswith("{}-".format(rpm_name)):
                 raise DBNeedsRebuild()
         except DBNeedsRebuild:
             raise
         except DcRPMException:
-            self.logger.error('rpm -q %s failed', rpm_name)
+            self.logger.error("rpm -q %s failed", rpm_name)
             raise DBNeedsRecovery()
 
     def recover_db(self):
@@ -280,36 +265,32 @@ class RPMUtil:
         """
         Runs `db_recover`.
         """
-        cmd = '{} -h {}'.format(self.recover_path, self.dbpath)
+        cmd = "{} -h {}".format(self.recover_path, self.dbpath)
 
-        proc = run_with_timeout(
-            cmd, RECOVER_TIMEOUT_SEC, raise_on_nonzero=False
-        )
+        proc = run_with_timeout(cmd, RECOVER_TIMEOUT_SEC, raise_on_nonzero=False)
         # We've seen an unrecoverable failure mode where
         # db_recover segfaults, remediable only by a rebuild
         if proc.returncode != StatusCode.SUCCESS:
-            self.status_logger.warning('db_recover_failed')
+            self.status_logger.warning("db_recover_failed")
             if proc.returncode == StatusCode.SEGFAULT:
                 raise DBNeedsRebuild
             else:
                 raise DcRPMException(
-                    'db_recover returned nonzero exit code ({})'.format(
-                        proc.returncode
-                    )
+                    "db_recover returned nonzero exit code ({})".format(proc.returncode)
                 )
         elif self.forensic:
-            self.status_logger.debug(proc.stderr, extra={'key': 'db_recover'})
+            self.status_logger.debug(proc.stderr, extra={"key": "db_recover"})
 
     def rebuild_db(self):
         # type: () -> None
         """
         Runs `rpm --rebuilddb`.
         """
-        cmd = '{} --dbpath {} --rebuilddb'.format(RPM_PATH, self.dbpath)
+        cmd = "{} --dbpath {} --rebuilddb".format(RPM_PATH, self.dbpath)
         try:
             run_with_timeout(cmd, REBUILD_TIMEOUT_SEC)
         except DcRPMException:
-            self.status_logger.warning('rebuild_tables_failed')
+            self.status_logger.warning("rebuild_tables_failed")
             raise
 
     def check_tables(self):
@@ -319,24 +300,20 @@ class RPMUtil:
 
           `rpm -qa --qf | sort | uniq | xargs rpm -q | grep 'is not installed$'`
 
-        which checks each rpm in the DB to see if there are inconsistencies
-        between what rpm thinks is installed and what is in the DB.
+        which checks each rpm in the DB to see if there are inconsistencies between what
+        rpm thinks is installed and what is in the DB.
         """
         cmd = (
             "{rpm} --dbpath {db} -qa --qf '%{NAME}\\n' | sort | uniq | "
             "xargs {rpm} --dbpath {db} -q | grep 'is not installed$'"
-        ).format(
-            rpm=RPM_PATH, db=self.dbpath, NAME='NAME'
-        )
+        ).format(rpm=RPM_PATH, db=self.dbpath, NAME="NAME")
 
         try:
             result = run_with_timeout(
-                cmd,
-                timeout=RPM_CHECK_TIMEOUT_SEC,
-                raise_on_nonzero=False,
+                cmd, timeout=RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
             )
         except DcRPMException:
-            self.status_logger.warning('initial_table_check_fail')
+            self.status_logger.warning("initial_table_check_fail")
             raise
 
         # Grep exit code 1 indicates it didn't find bad condition.
@@ -353,21 +330,19 @@ class RPMUtil:
                 self.logger.warning("Skipping table '%s', blacklisted", table)
                 continue
 
-            cmd = '{} {}'.format(self.verify_path, os.path.join(self.dbpath, table))
+            cmd = "{} {}".format(self.verify_path, os.path.join(self.dbpath, table))
             try:
                 result = run_with_timeout(
-                    cmd,
-                    VERIFY_TIMEOUT_SEC,
-                    raise_on_nonzero=False,
+                    cmd, VERIFY_TIMEOUT_SEC, raise_on_nonzero=False
                 )
             except DcRPMException:
-                self.status_logger.warning('initial_table_verify_fail')
+                self.status_logger.warning("initial_table_verify_fail")
                 raise
 
             # This raises a DcRPMException because it gets handled specially in
             # the main run loop.
             if result.returncode != 0:
-                self.logger.error('db_verify returned nonzero status')
+                self.logger.error("db_verify returned nonzero status")
                 raise DcRPMException()
 
     def clean_yum_transactions(self):
@@ -375,16 +350,14 @@ class RPMUtil:
         """
         Runs yum-complete-transaction.
         """
-        cmd = '{} --cleanup'.format(self.yum_complete_transaction_path)
+        cmd = "{} --cleanup".format(self.yum_complete_transaction_path)
         self.status_logger.info(RepairAction.CLEAN_YUM_TRANSACTIONS)
         run_with_timeout(cmd, YUM_COMPLETE_TIMEOUT_SEC, raise_on_nonzero=False)
 
     def kill_spinning_rpm_query_processes(
-        self,
-        kill_after_seconds=3600,  # type: int
-        kill_timeout=5,  # type: int
+        self, kill_after_seconds=3600, kill_timeout=5
     ):
-        # type: (...) -> None
+        # type: (int, int) -> None
         """
         Find and kill any rpm query processes over an hour old by looking explicitly for
         `rpm -q`.
@@ -404,7 +377,7 @@ class RPMUtil:
 
                 if time.time() - ctime > kill_after_seconds:
                     self.logger.error(
-                        "Found stale rpm process: (%d) %s", proc.pid, ' '.join(cmd)
+                        "Found stale rpm process: (%d) %s", proc.pid, " ".join(cmd)
                     )
                     proc.send_signal(signal.SIGKILL)
                     proc.wait(timeout=kill_timeout)
@@ -417,7 +390,5 @@ class RPMUtil:
                 continue
             except psutil.TimeoutExpired:
                 self.logger.warning(
-                    "Timed out after %ds waiting for pid %d",
-                    kill_timeout,
-                    proc.pid,
+                    "Timed out after %ds waiting for pid %d", kill_timeout, proc.pid
                 )

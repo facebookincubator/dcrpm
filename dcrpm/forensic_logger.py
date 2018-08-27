@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import time
 import os
-
+import time
 from datetime import datetime
 
 
@@ -26,12 +22,19 @@ class ForensicLogger(logging.Handler):
     def debug(self, record):
         # Check if 'key' was supplied to the logger
         # logger.debug(text, extra={'key': filename})
-        if not hasattr(record, 'key'):
+        if not hasattr(record, "key"):
             return
 
-        with open(os.path.join(self.logdir, "{}.{}.txt".format(record.key,
-            datetime.fromtimestamp(time.time()).strftime('%Y%m%d%H%M%S'),
-        )), 'w') as fp:
+        with open(
+            os.path.join(
+                self.logdir,
+                "{}.{}.txt".format(
+                    record.key,
+                    datetime.fromtimestamp(time.time()).strftime("%Y%m%d%H%M%S"),
+                ),
+            ),
+            "w",
+        ) as fp:
             fp.write(record.msg)
 
     def emit(self, record):

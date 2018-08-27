@@ -7,20 +7,18 @@
 # file in the root directory of this source tree.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 from collections import namedtuple
-
-from mock import create_autospec
-import psutil
 from typing import List, Optional  # noqa
+
+import psutil
+from mock import create_autospec
 
 from dcrpm.util import TimeoutExpired
 
-MockPopenFile = namedtuple('MockPopenFile', ['path'])
+
+MockPopenFile = namedtuple("MockPopenFile", ["path"])
 
 
 def make_mock_process(
@@ -50,7 +48,7 @@ def make_mock_process(
     mock_process.pid = pid
     mock_process.create_time.return_value = create_time
     mock_process.name.return_value = name
-    mock_process.as_dict.__name__ = 'as_dict'
+    mock_process.as_dict.__name__ = "as_dict"
     if as_dict_throw:
         mock_process.as_dict.side_effect = psutil.NoSuchProcess(pid)
 
@@ -60,8 +58,8 @@ def make_mock_process(
         mock_process.as_dict.side_effect = TimeoutExpired()
     else:
         mock_process.as_dict.return_value = {
-            'pid': pid,
-            'open_files': [MockPopenFile(f) for f in open_files],
+            "pid": pid,
+            "open_files": [MockPopenFile(f) for f in open_files],
         }
     if signal_throw:
         mock_process.send_signal.side_effect = psutil.NoSuchProcess(pid)

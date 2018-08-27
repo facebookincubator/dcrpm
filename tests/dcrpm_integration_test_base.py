@@ -7,22 +7,18 @@
 # file in the root directory of this source tree.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
-import os
-import unittest
+import json
 import logging
 import logging.config
-import json
+import unittest
 
 import libfb.py.parutil as parutil
 
 from ..dcrpm import DcRPM
-from ..rpmutil import RPMUtil, RPM_PATH
+from ..rpmutil import RPM_PATH, RPMUtil
 from .rpmdb import RPMDB
 
 
@@ -33,18 +29,13 @@ RPMDB.path = parutil.get_file_path("pe/dcrpm/py/tests/rpmdbs")
 
 
 class DcrpmIntegrationTestBase(unittest.TestCase):
-
     def setUp(self):
         self.rpmpath = RPM_PATH
-        self.dbpath = '/tmp/'
-        self.recover_path = '/bin/db_recover'
-        self.verify_path = '/bin/db_verify'
-        self.yum_complete_transaction_path = \
-            '/opt/yum/bin/yum-complete-transaction'
-        self.blacklist = [
-            'table1',
-            'table2',
-        ]
+        self.dbpath = "/tmp/"
+        self.recover_path = "/bin/db_recover"
+        self.verify_path = "/bin/db_verify"
+        self.yum_complete_transaction_path = "/opt/yum/bin/yum-complete-transaction"
+        self.blacklist = ["table1", "table2"]
         self.forensic = False
 
         # Args
@@ -61,8 +52,8 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
             max_passes=5,
             minspace=150 * 1048576,
             verbose=False,
-            logging_config_file='/var/log/blah.log',
-            blacklist=['table2', 'table3'],
+            logging_config_file="/var/log/blah.log",
+            blacklist=["table2", "table3"],
             forensic=False,
         )
 
@@ -77,8 +68,8 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
 
         # DcRPM
         self.dcrpm = DcRPM(self.rpmutil, self.args)
-        logging.getLogger('status').handlers[0].trace = []
+        logging.getLogger("status").handlers[0].trace = []
 
+    # Helper for reading current logger trace
     def action_trace(self):
-        # Helper for reading current logger trace
-        return logging.getLogger('status').handlers[0].trace
+        return logging.getLogger("status").handlers[0].trace

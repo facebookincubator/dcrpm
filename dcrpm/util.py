@@ -158,7 +158,11 @@ def run_with_timeout(cmd, timeout, raise_on_nonzero=True):
     _logger.debug("Running %s", cmd)
     cmdname = cmd.split()[0]
     proc = subprocess.Popen(
-        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
     )
     try:
         stdout, stderr = call_with_timeout(proc.communicate, timeout)

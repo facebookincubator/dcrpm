@@ -15,7 +15,10 @@ import subprocess
 import time
 import unittest
 
-from mock import Mock, call, patch
+try:
+    from unittest.mock import Mock, call, patch
+except ImportError:
+    from mock import Mock, call, patch
 
 from dcrpm.util import (
     DcRPMException,
@@ -71,7 +74,11 @@ class TestUtil(unittest.TestCase):
         result = run_with_timeout("/bin/true", 5)
         self.assertEqual(result.returncode, 0)
         mock_popen.assert_called_once_with(
-            "/bin/true", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            "/bin/true",
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
         )
 
     @patch("subprocess.Popen")

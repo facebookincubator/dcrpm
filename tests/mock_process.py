@@ -13,7 +13,11 @@ from collections import namedtuple
 from typing import List, Optional  # noqa
 
 import psutil
-from mock import create_autospec
+
+try:
+    from unittest.mock import create_autospec
+except ImportError:
+    from mock import create_autospec
 
 from dcrpm.util import TimeoutExpired
 

@@ -6,13 +6,23 @@ import signal
 import unittest
 from collections import namedtuple
 
-from mock import mock_open, patch
+try:
+    from unittest.mock import mock_open, patch
+except ImportError:
+    from mock import mock_open, patch
 
 from dcrpm import pidutil
 from tests.mock_process import make_mock_process
 
 
 stat_result = namedtuple("stat_result", ["st_mtime"])
+
+try:
+    import builtins
+
+    builtin_open = "builtins.open"
+except ImportError:
+    builtin_open = "__builtin__.open"
 
 
 class TestPidutil(unittest.TestCase):
@@ -105,7 +115,7 @@ class TestPidutil(unittest.TestCase):
 
     # pidfile_info
     def test_pidfile_info_sucess(self):
-        with patch("__builtin__.open", mock_open(read_data="12345")) as mock_o, patch(
+        with patch(builtin_open, mock_open(read_data="12345")) as mock_o, patch(
             "os.stat", return_value=stat_result("12345678")
         ):
             pid, _ = pidutil.pidfile_info("/some/path")
@@ -113,14 +123,14 @@ class TestPidutil(unittest.TestCase):
         mock_o.assert_called_once_with("/some/path")
 
     def test_pidfile_info_bad_pid(self):
-        with patch("__builtin__.open", mock_open(read_data="-1")), patch(
+        with patch(builtin_open, mock_open(read_data="-1")), patch(
             "os.stat", return_value=stat_result("12345678")
         ):
             with self.assertRaises(ValueError):
                 pid, _ = pidutil.pidfile_info("/something")
 
     def test_pidfile_info_invalid_pid(self):
-        with patch("__builtin__.open", mock_open(read_data="ooglybogly")), patch(
+        with patch(builtin_open, mock_open(read_data="ooglybogly")), patch(
             "os.stat", return_value=stat_result("12345678")
         ):
             with self.assertRaises(ValueError):

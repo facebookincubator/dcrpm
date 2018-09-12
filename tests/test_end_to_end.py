@@ -24,7 +24,7 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
         self.rpmutil.dbpath = dbpath
         self.dcrpm.args.dbpath = dbpath
         run_result = self.dcrpm.run()
-        self.assertEquals(self.action_trace(), [])
+        self.assertEqual(self.action_trace(), [])
         self.assertTrue(run_result)
 
     # TODO: figure out a way to gracefully skip this on c7, T30275604
@@ -37,7 +37,7 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
     #     self.rpmutil.dbpath = dbpath
     #     self.dcrpm.args.dbpath = dbpath
     #     self.dcrpm.run()
-    #     self.assertEquals(
+    #     self.assertEqual(
     #         self.action_trace(),
     #         ['db_recovery'],
     #     )
@@ -51,7 +51,7 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
         self.rpmutil.dbpath = dbpath
         self.dcrpm.args.dbpath = dbpath
         run_result = self.dcrpm.run()
-        self.assertEquals(self.action_trace(), [])
+        self.assertEqual(self.action_trace(), [])
         self.assertTrue(run_result)
 
     # CentOS Linux release 7.4.1708 (Core)
@@ -63,5 +63,5 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
         self.rpmutil.dbpath = dbpath
         self.dcrpm.args.dbpath = dbpath
         run_result = self.dcrpm.run()
-        self.assertEquals(self.action_trace(), [])
+        self.assertEqual(self.action_trace(), [])
         self.assertTrue(run_result)

@@ -12,7 +12,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import time
 import unittest
 
-from mock import patch
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 
 from dcrpm.yum import Yum
 from tests.mock_process import make_mock_process

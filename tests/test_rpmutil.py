@@ -10,9 +10,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import unittest
-from typing import Dict  # noqa
+from typing import Dict
 
-from mock import Mock, call, patch  # noqa
+try:
+    from unittest.mock import Mock, call, patch
+except ImportError:
+    from mock import Mock, call, patch
 
 from dcrpm import rpmutil
 from dcrpm.util import CompletedProcess, DBNeedsRebuild, DBNeedsRecovery, DcRPMException
@@ -48,9 +51,9 @@ class TestRPMUtil(unittest.TestCase):
     def setUp(self):
         self.rpmpath = rpmutil.RPM_PATH
         self.dbpath = "/var/lib/rpm"
-        self.recover_path = "/opt/yum/bin/db48_recover"
-        self.verify_path = "/opt/yum/bin/db48_verify"
-        self.yum_complete_transaction_path = "/opt/yum/bin/yum-complete-transaction"
+        self.recover_path = "/usr/bin/db_recover"
+        self.verify_path = "/usr/bin/db_verify"
+        self.yum_complete_transaction_path = "/usr/bin/yum-complete-transaction"
         self.blacklist = ["table1", "table2"]
         self.forensic = (False,)
         self.rpmutil = rpmutil.RPMUtil(

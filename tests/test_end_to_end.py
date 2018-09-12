@@ -9,8 +9,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .dcrpm_integration_test_base import DcrpmIntegrationTestBase
-from .rpmdb import RPMDB
+from tests.dcrpm_integration_test_base import DcrpmIntegrationTestBase
+from tests.rpmdb import RPMDB
 
 
 class DcrpmIntegrationTest(DcrpmIntegrationTestBase):

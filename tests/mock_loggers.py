@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-from ..util import ACTION_NAMES
+from dcrpm.util import ACTION_NAMES
 
 
 class NullLogger(logging.Handler):

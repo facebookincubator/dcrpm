@@ -9,12 +9,12 @@
         "test_handler": {
             "level": "INFO",
             "formatter": "plain",
-            "class": "pe.dcrpm.py.tests.logging.TestLogger"
+            "class": "tests.mock_loggers.TestLogger"
         },
         "null_handler": {
             "level": "INFO",
             "formatter": "plain",
-            "class": "pe.dcrpm.py.tests.logging.NullLogger"
+            "class": "tests.mock_loggers.NullLogger"
         }
     },
     "loggers": {

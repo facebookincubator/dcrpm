@@ -39,9 +39,9 @@ def assert_called_like(mock, call_mapping):
     for method, should_have_called in call_mapping.items():
         attr = getattr(mock, method)
         if should_have_called:
-            attr.assert_called()
+            assert attr.call_count > 0
         else:
-            attr.assert_not_called()
+            assert attr.call_count == 0
 
 
 class TestRPMUtil(unittest.TestCase):
@@ -190,7 +190,7 @@ class TestRPMUtil(unittest.TestCase):
     def test_verify_tables_all_blacklisted(self, mock_run):
         self.rpmutil.tables = self.rpmutil.tables[1:3]
         self.rpmutil.verify_tables()
-        mock_run.assert_not_called()
+        self.assertEqual(mock_run.call_count, 0)
 
     @patch(run_str, side_effect=2 * [CompletedProcess(returncode=1)])
     def test_verify_tables_fail(self, mock_run):

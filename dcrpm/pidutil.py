@@ -14,7 +14,7 @@ import os
 
 import psutil
 
-from .util import TimeoutExpired, call_with_timeout
+from dcrpm.util import TimeoutExpired, call_with_timeout
 
 
 DEFAULT_TIMEOUT = 5  # seconds

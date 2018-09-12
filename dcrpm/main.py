@@ -47,7 +47,7 @@ DEFAULT_LOGGING_CONFIG = {
         "forensic_logger": {
             "level": "DEBUG",
             "formatter": "standard",
-            "class": "pe.dcrpm.py.forensic_logger.ForensicLogger",
+            "class": "dcrpm.forensic_logger.ForensicLogger",
             "logdir": "/tmp",
         },
     },

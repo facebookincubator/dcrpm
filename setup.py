@@ -60,7 +60,7 @@ setup(
     long_description=long_description,
     license="GPLv2",
     install_requires=["psutil"],
-    tests_require=["mock"],
+    tests_require=["mock", "typing"],
     test_suite="tests",
     entry_points={"console_scripts": ["dcrpm=dcrpm.main:main"]},
 )

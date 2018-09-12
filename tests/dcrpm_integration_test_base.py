@@ -15,17 +15,15 @@ import logging
 import logging.config
 import unittest
 
-import libfb.py.parutil as parutil
-
-from ..dcrpm import DcRPM
-from ..rpmutil import RPM_PATH, RPMUtil
-from .rpmdb import RPMDB
+from dcrpm.dcrpm import DcRPM
+from dcrpm.rpmutil import RPM_PATH, RPMUtil
+from tests.rpmdb import RPMDB
 
 
-with open(parutil.get_file_path("pe/dcrpm/py/tests/logging.json")) as f:
+with open("tests/logging.json") as f:
     logging.config.dictConfig(json.load(f))
 
-RPMDB.path = parutil.get_file_path("pe/dcrpm/py/tests/rpmdbs")
+RPMDB.path = "tests/rpmdbs"
 
 
 class DcrpmIntegrationTestBase(unittest.TestCase):
@@ -34,7 +32,7 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
         self.dbpath = "/tmp/"
         self.recover_path = "/bin/db_recover"
         self.verify_path = "/bin/db_verify"
-        self.yum_complete_transaction_path = "/opt/yum/bin/yum-complete-transaction"
+        self.yum_complete_transaction_path = "/usr/sbin/yum-complete-transaction"
         self.blacklist = ["table1", "table2"]
         self.forensic = False
 

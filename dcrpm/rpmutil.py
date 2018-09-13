@@ -36,7 +36,6 @@ RECOVER_TIMEOUT_SEC = 90
 REBUILD_TIMEOUT_SEC = 300
 MIN_ACCEPTABLE_PKG_COUNT = 50
 RPM_PATH = "/usr/bin/rpm"
-DB_STAT_PATH = "/usr/bin/db_stat"
 
 
 class RPMUtil:
@@ -49,6 +48,7 @@ class RPMUtil:
         dbpath,
         recover_path,
         verify_path,
+        stat_path,
         yum_complete_transaction_path,
         blacklist,
         forensic,
@@ -57,6 +57,7 @@ class RPMUtil:
         self.dbpath = dbpath
         self.recover_path = recover_path
         self.verify_path = verify_path
+        self.stat_path = stat_path
         self.yum_complete_transaction_path = yum_complete_transaction_path
         self.blacklist = blacklist
         self.forensic = forensic
@@ -71,7 +72,7 @@ class RPMUtil:
         environment.
         """
         try:
-            cmd = "{} -CA -h {}".format(DB_STAT_PATH, self.dbpath)
+            cmd = "{} -CA -h {}".format(self.stat_path, self.dbpath)
             ds = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False)
             if ds.returncode > 0:
                 # Sometimes db_stat can fail, let's try to preserve that

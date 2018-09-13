@@ -88,6 +88,12 @@ def parse_args():
         help="Path to db_verify",
     )
     parser.add_argument(
+        "--stat-path",
+        metavar="PATH",
+        default="/usr/bin/db_stat",
+        help="Path to db_stat",
+    )
+    parser.add_argument(
         "--clean-yum-transactions",
         action="store_true",
         help="Clean stale yum transactions using yum-complete-transaction",
@@ -164,6 +170,7 @@ def main():
         dbpath=args.dbpath,
         recover_path=args.recover_path,
         verify_path=args.verify_path,
+        stat_path=args.stat_path,
         yum_complete_transaction_path=args.yum_complete_transaction_path,
         blacklist=args.blacklist,
         forensic=args.forensic,

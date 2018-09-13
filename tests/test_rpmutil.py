@@ -53,6 +53,7 @@ class TestRPMUtil(unittest.TestCase):
         self.dbpath = "/var/lib/rpm"
         self.recover_path = "/usr/bin/db_recover"
         self.verify_path = "/usr/bin/db_verify"
+        self.stat_path = "/usr/bin/db_stat"
         self.yum_complete_transaction_path = "/usr/bin/yum-complete-transaction"
         self.blacklist = ["table1", "table2"]
         self.forensic = (False,)
@@ -60,6 +61,7 @@ class TestRPMUtil(unittest.TestCase):
             dbpath=self.dbpath,
             recover_path=self.recover_path,
             verify_path=self.verify_path,
+            stat_path=self.stat_path,
             yum_complete_transaction_path=self.yum_complete_transaction_path,
             blacklist=self.blacklist,
             forensic=self.forensic,

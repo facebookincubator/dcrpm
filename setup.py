@@ -15,7 +15,7 @@ from __future__ import unicode_literals
 import logging
 import os
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 import dcrpm.__version__
 
@@ -39,7 +39,7 @@ except Exception:
 setup(
     name="dcrpm",
     version=dcrpm.__version__,
-    packages=["dcrpm"],
+    packages=find_packages(),
     author="Sean Karlage",
     author_email="skarlage@fb.com",
     url="https://github.com/facebookincubator/dcrpm",

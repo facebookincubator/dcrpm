@@ -14,7 +14,10 @@ import unittest
 from collections import namedtuple
 from os.path import join
 
-from mock import patch
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 
 from dcrpm.dcrpm import DcRPM
 from dcrpm.rpmutil import RPM_PATH, RPMUtil
@@ -29,9 +32,9 @@ class TestDcRPM(unittest.TestCase):
     def setUp(self):
         self.rpmpath = RPM_PATH
         self.dbpath = "/var/lib/rpm"
-        self.recover_path = "/opt/yum/bin/db48_recover"
-        self.verify_path = "/opt/yum/bin/db48_verify"
-        self.yum_complete_transaction_path = "/opt/yum/bin/yum-complete-transaction"
+        self.recover_path = "/usr/bin/db_recover"
+        self.verify_path = "/usr/bin/db_verify"
+        self.yum_complete_transaction_path = "/usr/bin/yum-complete-transaction"
         self.blacklist = ["table1", "table2"]
         self.rpmutil = RPMUtil(
             dbpath=self.dbpath,

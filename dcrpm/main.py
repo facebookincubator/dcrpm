@@ -78,13 +78,13 @@ def parse_args():
     parser.add_argument(
         "--recover-path",
         metavar="PATH",
-        default="/bin/db_recover",
+        default="/usr/bin/db_recover",
         help="Path to db_recover",
     )
     parser.add_argument(
         "--verify-path",
         metavar="PATH",
-        default="/bin/db_verify",
+        default="/usr/bin/db_verify",
         help="Path to db_verify",
     )
     parser.add_argument(

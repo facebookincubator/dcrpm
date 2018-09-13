@@ -30,8 +30,8 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
     def setUp(self):
         self.rpmpath = RPM_PATH
         self.dbpath = "/tmp/"
-        self.recover_path = "/bin/db_recover"
-        self.verify_path = "/bin/db_verify"
+        self.recover_path = "/usr/bin/db_recover"
+        self.verify_path = "/usr/bin/db_verify"
         self.yum_complete_transaction_path = "/usr/sbin/yum-complete-transaction"
         self.blacklist = ["table1", "table2"]
         self.forensic = False

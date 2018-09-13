@@ -82,6 +82,7 @@ class TestDcRPM(unittest.TestCase):
     @patch("dcrpm.rpmutil.RPMUtil.db_stat")
     def test_db_stat_forensic(self, mock_db_stat, mock_kill):
         self.args.forensic = True
+        self.args.dry_run = True
         self.dcrpm.run()
         mock_db_stat.assert_called()
         mock_kill.assert_not_called()

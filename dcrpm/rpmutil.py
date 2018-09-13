@@ -35,8 +35,8 @@ VERIFY_TIMEOUT_SEC = 5
 RECOVER_TIMEOUT_SEC = 90
 REBUILD_TIMEOUT_SEC = 300
 MIN_ACCEPTABLE_PKG_COUNT = 50
-RPM_PATH = "/bin/rpm"
-DB_STAT_PATH = "/bin/db_stat"
+RPM_PATH = "/usr/bin/rpm"
+DB_STAT_PATH = "/usr/bin/db_stat"
 
 
 class RPMUtil:
@@ -276,7 +276,9 @@ class RPMUtil:
                 raise DBNeedsRebuild
             else:
                 raise DcRPMException(
-                    "db_recover returned nonzero exit code ({})".format(proc.returncode)
+                    "db_recover returned nonzero exit code ({}): {} {}".format(
+                        proc.returncode, proc.stdout, proc.stderr
+                    )
                 )
         elif self.forensic:
             self.status_logger.debug(proc.stderr, extra={"key": "db_recover"})

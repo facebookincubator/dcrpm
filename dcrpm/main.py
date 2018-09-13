@@ -76,6 +76,9 @@ def parse_args():
         help="Run stuck yum check and remediation",
     )
     parser.add_argument(
+        "--rpm-path", metavar="PATH", default="/usr/bin/rpm", help="Path to rpm"
+    )
+    parser.add_argument(
         "--recover-path",
         metavar="PATH",
         default="/usr/bin/db_recover",
@@ -168,6 +171,7 @@ def main():
     # Let's go!
     rpmutil = RPMUtil(
         dbpath=args.dbpath,
+        rpm_path=args.rpm_path,
         recover_path=args.recover_path,
         verify_path=args.verify_path,
         stat_path=args.stat_path,

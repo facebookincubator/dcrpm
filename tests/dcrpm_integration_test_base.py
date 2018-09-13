@@ -16,7 +16,7 @@ import logging.config
 import unittest
 
 from dcrpm.dcrpm import DcRPM
-from dcrpm.rpmutil import RPM_PATH, RPMUtil
+from dcrpm.rpmutil import RPMUtil
 from tests.rpmdb import RPMDB
 
 
@@ -28,7 +28,7 @@ RPMDB.path = "tests/rpmdbs"
 
 class DcrpmIntegrationTestBase(unittest.TestCase):
     def setUp(self):
-        self.rpmpath = RPM_PATH
+        self.rpm_path = "/usr/bin/rpm"
         self.dbpath = "/tmp/"
         self.recover_path = "/usr/bin/db_recover"
         self.verify_path = "/usr/bin/db_verify"
@@ -41,6 +41,7 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
         self.args = argparse.Namespace(
             dry_run=False,
             check_stuck_yum=True,
+            rpm_path=self.rpm_path,
             recover_path=self.recover_path,
             verify_path=self.verify_path,
             stat_path=self.stat_path,
@@ -59,6 +60,7 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
 
         self.rpmutil = RPMUtil(
             dbpath=self.dbpath,
+            rpm_path=self.rpm_path,
             recover_path=self.recover_path,
             verify_path=self.verify_path,
             stat_path=self.stat_path,

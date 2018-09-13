@@ -35,7 +35,6 @@ VERIFY_TIMEOUT_SEC = 5
 RECOVER_TIMEOUT_SEC = 90
 REBUILD_TIMEOUT_SEC = 300
 MIN_ACCEPTABLE_PKG_COUNT = 50
-RPM_PATH = "/usr/bin/rpm"
 
 
 class RPMUtil:
@@ -46,6 +45,7 @@ class RPMUtil:
     def __init__(
         self,
         dbpath,
+        rpm_path,
         recover_path,
         verify_path,
         stat_path,
@@ -55,6 +55,7 @@ class RPMUtil:
     ):
         # type: (str, str, str, str, List[str]) -> None
         self.dbpath = dbpath
+        self.rpm_path = rpm_path
         self.recover_path = recover_path
         self.verify_path = verify_path
         self.stat_path = stat_path
@@ -109,7 +110,9 @@ class RPMUtil:
 
         rpmdb_indexes = {
             "Basenames": {
-                "cmd": "{} -qf {} --dbpath {}".format(RPM_PATH, RPM_PATH, self.dbpath),
+                "cmd": "{} -qf {} --dbpath {}".format(
+                    self.rpm_path, self.rpm_path, self.dbpath
+                ),
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) == 1,
@@ -118,7 +121,7 @@ class RPMUtil:
             },
             "Conflictname": {
                 "cmd": "{} -q --conflicts initscripts --dbpath {}".format(
-                    RPM_PATH, self.dbpath
+                    self.rpm_path, self.dbpath
                 ),
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
@@ -127,7 +130,7 @@ class RPMUtil:
             },
             "Obsoletename": {
                 "cmd": "{} -q --obsoletes coreutils --dbpath {}".format(
-                    RPM_PATH, self.dbpath
+                    self.rpm_path, self.dbpath
                 ),
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
@@ -136,7 +139,7 @@ class RPMUtil:
             },
             "Providename": {
                 "cmd": "{} -q --whatprovides rpm --dbpath {}".format(
-                    RPM_PATH, self.dbpath
+                    self.rpm_path, self.dbpath
                 ),
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
@@ -146,7 +149,7 @@ class RPMUtil:
             },
             "Requirename": {
                 "cmd": "{} -q --whatrequires rpm --dbpath {}".format(
-                    RPM_PATH, self.dbpath
+                    self.rpm_path, self.dbpath
                 ),
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
@@ -225,7 +228,7 @@ class RPMUtil:
         Runs `rpm -qa` which serves as a good proxy check for whether bdb needs recovery
         """
         try:
-            cmd = "{} --dbpath {} -qa".format(RPM_PATH, self.dbpath)
+            cmd = "{} --dbpath {} -qa".format(self.rpm_path, self.dbpath)
             result = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC)
         except DcRPMException:
             self.logger.error("rpm -qa failed")
@@ -250,7 +253,7 @@ class RPMUtil:
         results (like 'perl' >.>)
         """
         try:
-            cmd = "{} --dbpath {} -q {}".format(RPM_PATH, self.dbpath, rpm_name)
+            cmd = "{} --dbpath {} -q {}".format(self.rpm_path, self.dbpath, rpm_name)
             result = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC)
             stdout = result.stdout.strip().split()
             if not len(stdout) == 1 or not stdout[0].startswith("{}-".format(rpm_name)):
@@ -289,7 +292,7 @@ class RPMUtil:
         """
         Runs `rpm --rebuilddb`.
         """
-        cmd = "{} --dbpath {} --rebuilddb".format(RPM_PATH, self.dbpath)
+        cmd = "{} --dbpath {} --rebuilddb".format(self.rpm_path, self.dbpath)
         try:
             run_with_timeout(cmd, REBUILD_TIMEOUT_SEC)
         except DcRPMException:
@@ -309,7 +312,7 @@ class RPMUtil:
         cmd = (
             "{rpm} --dbpath {db} -qa --qf '%{NAME}\\n' | sort | uniq | "
             "xargs {rpm} --dbpath {db} -q | grep 'is not installed$'"
-        ).format(rpm=RPM_PATH, db=self.dbpath, NAME="NAME")
+        ).format(rpm=self.rpm_path, db=self.dbpath, NAME="NAME")
 
         try:
             result = run_with_timeout(

@@ -116,6 +116,14 @@ class TestUtil(unittest.TestCase):
         result = run_with_timeout("/bin/true", 5, raise_on_nonzero=False)
         self.assertEqual(result.returncode, 1)
 
+    @patch("subprocess.Popen")
+    def test_run_with_timeout_no_raise_on_timeout(self, mock_popen):
+        mock_popen.return_value = make_mock_popen(returncode=1, communicate_raise=True)
+        result = run_with_timeout("/bin/true", 5, raise_on_timeout=False)
+        self.assertNotEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, None)
+        self.assertEqual(result.stderr, None)
+
     # kindly_end
     def test_kindly_end_terminates(self):
         mock_popen = make_mock_popen()

@@ -12,9 +12,13 @@ addons:
       - db-util
       - rpm
 
-# workaround for https://github.com/travis-ci/travis-ci/issues/2312
 matrix:
   include:
+    # workaround for https://github.com/travis-ci/travis-ci/issues/9815
+    - python: 3.7
+      dist: xenial
+      sudo: true
+    # workaround for https://github.com/travis-ci/travis-ci/issues/2312
     - os: osx
       language: generic
       name: "Python: 2.7"
@@ -27,6 +31,15 @@ matrix:
       language: generic
       name: "Python: 3.6"
       env: PYTHON_VERSION=3.6.3
+    - os: osx
+      language: generic
+      name: "Python: 3.7"
+      env: PYTHON_VERSION=3.7.0
+    # black formatting check
+    - name: "Black formatting"
+      python: 3.6
+      install: pip install black
+      script: black --check .
 
 before_install: |
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then

@@ -14,6 +14,7 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import sys
 
 from setuptools import setup, find_packages
 
@@ -35,11 +36,17 @@ except Exception:
     # it's ok if this fails.
     logging.exception("Could not translate readme into a rst!")
 
+if sys.version_info.major < 3 or (
+    sys.version_info.major == 3 and sys.version_info.minor < 6
+):
+    tests_require = ["mock", "typing"]
+else:
+    tests_require = []
 
 setup(
     name="dcrpm",
     version=dcrpm.__version__,
-    packages=find_packages(),
+    packages=find_packages(exclude=["tests"]),
     author="Sean Karlage",
     author_email="skarlage@fb.com",
     url="https://github.com/facebookincubator/dcrpm",
@@ -49,8 +56,8 @@ setup(
         "Intended Audience :: System Administrators",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
         "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
@@ -60,7 +67,7 @@ setup(
     long_description=long_description,
     license="GPLv2",
     install_requires=["psutil"],
-    tests_require=["mock", "typing"],
+    tests_require=tests_require,
     test_suite="tests",
     entry_points={"console_scripts": ["dcrpm=dcrpm.main:main"]},
 )

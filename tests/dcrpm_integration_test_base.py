@@ -17,6 +17,7 @@ import unittest
 
 from dcrpm.dcrpm import DcRPM
 from dcrpm.rpmutil import RPMUtil
+from dcrpm.util import which
 from tests.rpmdb import RPMDB
 
 
@@ -28,11 +29,11 @@ RPMDB.path = "tests/rpmdbs"
 
 class DcrpmIntegrationTestBase(unittest.TestCase):
     def setUp(self):
-        self.rpm_path = "/usr/bin/rpm"
+        self.rpm_path = which("rpm")
         self.dbpath = "/tmp/"
-        self.recover_path = "/usr/bin/db_recover"
-        self.verify_path = "/usr/bin/db_verify"
-        self.stat_path = "/usr/bin/db_stat"
+        self.recover_path = which("db_recover")
+        self.verify_path = which("db_verify")
+        self.stat_path = which("db_stat")
         self.yum_complete_transaction_path = "/usr/sbin/yum-complete-transaction"
         self.blacklist = ["table1", "table2"]
         self.forensic = False

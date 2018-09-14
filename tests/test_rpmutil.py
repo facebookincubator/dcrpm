@@ -49,17 +49,20 @@ def assert_called_like(mock, call_mapping):
 
 class TestRPMUtil(unittest.TestCase):
     def setUp(self):
-        self.rpmpath = rpmutil.RPM_PATH
+        self.rpm_path = "/usr/bin/rpm"
         self.dbpath = "/var/lib/rpm"
         self.recover_path = "/usr/bin/db_recover"
         self.verify_path = "/usr/bin/db_verify"
+        self.stat_path = "/usr/bin/db_stat"
         self.yum_complete_transaction_path = "/usr/bin/yum-complete-transaction"
         self.blacklist = ["table1", "table2"]
         self.forensic = (False,)
         self.rpmutil = rpmutil.RPMUtil(
             dbpath=self.dbpath,
+            rpm_path=self.rpm_path,
             recover_path=self.recover_path,
             verify_path=self.verify_path,
+            stat_path=self.stat_path,
             yum_complete_transaction_path=self.yum_complete_transaction_path,
             blacklist=self.blacklist,
             forensic=self.forensic,
@@ -82,7 +85,7 @@ class TestRPMUtil(unittest.TestCase):
         test_rpm_name = "foo"
         self.rpmutil.query("foo")
         self.assertIn(
-            "{} --dbpath {} -q {}".format(self.rpmpath, self.dbpath, test_rpm_name),
+            "{} --dbpath {} -q {}".format(self.rpm_path, self.dbpath, test_rpm_name),
             mock_run.call_args[0],
         )
         self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
@@ -110,7 +113,7 @@ class TestRPMUtil(unittest.TestCase):
     def test_check_rpm_qa_success(self, mock_run):
         self.rpmutil.check_rpm_qa()
         self.assertIn(
-            "{} --dbpath {} -qa".format(self.rpmpath, self.dbpath),
+            "{} --dbpath {} -qa".format(self.rpm_path, self.dbpath),
             mock_run.call_args[0],
         )
         self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
@@ -126,7 +129,7 @@ class TestRPMUtil(unittest.TestCase):
         with self.assertRaises(DBNeedsRecovery):
             self.rpmutil.check_rpm_qa()
         self.assertIn(
-            "{} --dbpath {} -qa".format(self.rpmpath, self.dbpath),
+            "{} --dbpath {} -qa".format(self.rpm_path, self.dbpath),
             mock_run.call_args[0],
         )
         self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
@@ -137,7 +140,7 @@ class TestRPMUtil(unittest.TestCase):
         with self.assertRaises(DBNeedsRecovery):
             self.rpmutil.check_rpm_qa()
         self.assertIn(
-            "{} --dbpath {} -qa".format(self.rpmpath, self.dbpath),
+            "{} --dbpath {} -qa".format(self.rpm_path, self.dbpath),
             mock_run.call_args[0],
         )
         self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
@@ -158,7 +161,7 @@ class TestRPMUtil(unittest.TestCase):
     def test_rebuild_db_success(self, mock_run):
         self.rpmutil.rebuild_db()
         self.assertIn(
-            "{} --dbpath {} --rebuilddb".format(rpmutil.RPM_PATH, self.dbpath),
+            "{} --dbpath {} --rebuilddb".format(self.rpm_path, self.dbpath),
             mock_run.call_args[0],
         )
         self.assertIn(rpmutil.REBUILD_TIMEOUT_SEC, mock_run.call_args[0])

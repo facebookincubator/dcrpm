@@ -20,7 +20,7 @@ except ImportError:
     from mock import patch
 
 from dcrpm.dcrpm import DcRPM
-from dcrpm.rpmutil import RPM_PATH, RPMUtil
+from dcrpm.rpmutil import RPMUtil
 from dcrpm.util import DcRPMException
 
 
@@ -30,16 +30,19 @@ statvfs_result = namedtuple("statvfs_result", ["f_bsize", "f_bfree"])
 
 class TestDcRPM(unittest.TestCase):
     def setUp(self):
-        self.rpmpath = RPM_PATH
+        self.rpm_path = "/usr/bin/rpm"
         self.dbpath = "/var/lib/rpm"
         self.recover_path = "/usr/bin/db_recover"
         self.verify_path = "/usr/bin/db_verify"
+        self.stat_path = "/usr/bin/db_stat"
         self.yum_complete_transaction_path = "/usr/bin/yum-complete-transaction"
         self.blacklist = ["table1", "table2"]
         self.rpmutil = RPMUtil(
             dbpath=self.dbpath,
+            rpm_path=self.rpm_path,
             recover_path=self.recover_path,
             verify_path=self.verify_path,
+            stat_path=self.stat_path,
             yum_complete_transaction_path=self.yum_complete_transaction_path,
             blacklist=self.blacklist,
             forensic=False,
@@ -50,8 +53,10 @@ class TestDcRPM(unittest.TestCase):
         self.args = argparse.Namespace(
             dry_run=False,
             check_stuck_yum=True,
+            rpm_path=self.rpm_path,
             recover_path=self.recover_path,
             verify_path=self.verify_path,
+            stat_path=self.stat_path,
             clean_yum_transactions=False,
             yum_complete_transaction_path=self.yum_complete_transaction_path,
             dbpath=self.dbpath,
@@ -82,6 +87,7 @@ class TestDcRPM(unittest.TestCase):
     @patch("dcrpm.rpmutil.RPMUtil.db_stat")
     def test_db_stat_forensic(self, mock_db_stat, mock_kill):
         self.args.forensic = True
+        self.args.dry_run = True
         self.dcrpm.run()
         mock_db_stat.assert_called()
         mock_kill.assert_not_called()

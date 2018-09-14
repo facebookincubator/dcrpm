@@ -21,6 +21,7 @@ import sys
 from . import __version__
 from .dcrpm import DcRPM
 from .rpmutil import RPMUtil
+from .util import which
 
 # Some sensible defaults.
 DEFAULT_MAX_PASSES = 5
@@ -76,16 +77,22 @@ def parse_args():
         help="Run stuck yum check and remediation",
     )
     parser.add_argument(
+        "--rpm-path", metavar="PATH", default=which("rpm"), help="Path to rpm"
+    )
+    parser.add_argument(
         "--recover-path",
         metavar="PATH",
-        default="/bin/db_recover",
+        default=which("db_recover"),
         help="Path to db_recover",
     )
     parser.add_argument(
         "--verify-path",
         metavar="PATH",
-        default="/bin/db_verify",
+        default=which("db_verify"),
         help="Path to db_verify",
+    )
+    parser.add_argument(
+        "--stat-path", metavar="PATH", default=which("db_stat"), help="Path to db_stat"
     )
     parser.add_argument(
         "--clean-yum-transactions",
@@ -162,8 +169,10 @@ def main():
     # Let's go!
     rpmutil = RPMUtil(
         dbpath=args.dbpath,
+        rpm_path=args.rpm_path,
         recover_path=args.recover_path,
         verify_path=args.verify_path,
+        stat_path=args.stat_path,
         yum_complete_transaction_path=args.yum_complete_transaction_path,
         blacklist=args.blacklist,
         forensic=args.forensic,

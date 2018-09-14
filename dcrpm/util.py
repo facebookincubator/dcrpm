@@ -10,6 +10,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import os
 import signal
 import subprocess
 
@@ -202,3 +203,15 @@ def kindly_end(proc, timeout=END_TIMEOUT):
             call_with_timeout(proc.wait, timeout)
         except TimeoutExpired:
             _logger.error("Could not SIGKILL %d, good luck", proc.pid)
+
+
+def which(cmd):
+    try:
+        from shutil import which
+
+        return which(cmd)
+    except ImportError:
+        for path in os.environ["PATH"].split(os.pathsep):
+            p = os.path.join(path, cmd)
+            if os.access(p, os.X_OK):
+                return p

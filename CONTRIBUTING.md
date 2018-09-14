@@ -25,7 +25,7 @@ include a test output if relevant. New features should be accompained by tests
 whenever possible.
 
 We will hold all contributions to the same quality and style standards as the
-existing code.
+existing code. dcrpm is formatted with [black](https://github.com/ambv/black).
 
 ## License
 By contributing to this repository, you agree that your contributions will be

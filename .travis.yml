@@ -1,3 +1,4 @@
+os: linux
 language: python
 
 python:
@@ -10,6 +11,37 @@ addons:
     packages:
       - db-util
       - rpm
+
+# workaround for https://github.com/travis-ci/travis-ci/issues/2312
+matrix:
+  include:
+    - os: osx
+      language: generic
+      name: "Python: 2.7"
+      env: PYTHON_VERSION=2.7.14
+    - os: osx
+      language: generic
+      name: "Python: 3.4"
+      env: PYTHON_VERSION=3.4.8
+    - os: osx
+      language: generic
+      name: "Python: 3.6"
+      env: PYTHON_VERSION=3.6.3
+
+before_install: |
+  if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+    brew update
+
+    # setup python
+    brew outdated pyenv || brew upgrade pyenv
+    pyenv install "$PYTHON_VERSION"
+    eval "$(pyenv init -)"
+    pyenv global "$PYTHON_VERSION"
+
+    # setup rpm
+    brew install rpm
+    sudo mkdir -p /var/lib/rpm
+  fi
 
 script:
   - python setup.py test

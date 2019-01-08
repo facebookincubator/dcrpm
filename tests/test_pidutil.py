@@ -10,6 +10,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import signal
+import sys
 import unittest
 from collections import namedtuple
 
@@ -24,12 +25,14 @@ from tests.mock_process import make_mock_process
 
 stat_result = namedtuple("stat_result", ["st_mtime"])
 
-try:
+if sys.version_info[0] == 2:
+    # Python 2
+    builtin_open = "__builtin__.open"
+else:
+    # Python 3
     import builtins
 
     builtin_open = "builtins.open"
-except ImportError:
-    builtin_open = "__builtin__.open"
 
 
 class TestPidutil(unittest.TestCase):

@@ -22,6 +22,8 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
     @RPMDB.from_file("rpmdb_fedora26")
     def test_rpmdb_fedora26(self, dbpath):
         self.rpmutil.dbpath = dbpath
+        self.rpmutil.populate_tables()
+        self.rpmutil._read_os_release = lambda: {"ID": "fedora"}
         self.dcrpm.args.dbpath = dbpath
         run_result = self.dcrpm.run()
         self.assertEqual(self.action_trace(), [])
@@ -35,6 +37,8 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
     # @RPMDB.from_file('rpmdb_centos6')
     # def test_rpmdb_centos6(self, dbpath):
     #     self.rpmutil.dbpath = dbpath
+    #     self.rpmutil.populate_tables()
+    #     self.rpmutil._read_os_release = lambda: {'ID': 'centos'}
     #     self.dcrpm.args.dbpath = dbpath
     #     self.dcrpm.run()
     #     self.assertEqual(
@@ -49,6 +53,8 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
     @RPMDB.from_file("rpmdb_centos7")
     def test_rpmdb_centos7(self, dbpath):
         self.rpmutil.dbpath = dbpath
+        self.rpmutil.populate_tables()
+        self.rpmutil._read_os_release = lambda: {"ID": "centos"}
         self.dcrpm.args.dbpath = dbpath
         run_result = self.dcrpm.run()
         self.assertEqual(self.action_trace(), [])
@@ -61,6 +67,8 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
     @RPMDB.from_file("rpmdb_centos7_missing_index")
     def test_rpmdb_centos7_missing_index(self, dbpath):
         self.rpmutil.dbpath = dbpath
+        self.rpmutil.populate_tables()
+        self.rpmutil._read_os_release = lambda: {"ID": "centos"}
         self.dcrpm.args.dbpath = dbpath
         run_result = self.dcrpm.run()
         self.assertEqual(self.action_trace(), [])

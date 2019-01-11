@@ -109,6 +109,18 @@ ACTION_NAMES = {
 }
 
 
+def memoize(f):
+    cache = {}
+
+    def wrapper(*args, **kwargs):
+        key = str(args) + str(kwargs)
+        if key not in cache:
+            cache[key] = f(*args, **kwargs)
+        return cache[key]
+
+    return wrapper
+
+
 def alarm_handler(signum, frame):
     # type: (int, Any) -> None
     """

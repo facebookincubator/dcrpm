@@ -25,6 +25,7 @@ from .util import (
     DcRPMException,
     RepairAction,
     StatusCode,
+    memoize,
     run_with_timeout,
 )
 
@@ -64,6 +65,17 @@ class RPMUtil:
         self.forensic = forensic
         self.logger = logging.getLogger()
         self.status_logger = logging.getLogger("status")
+        self.populate_tables()
+
+    def populate_tables(self):
+        # type: () -> None
+        """
+        Populates self.tables. This is broken out from the constructor to
+        support unit tests; the initial constructor is called with /tmp, but
+        then the dbpath is changed (but the tables are never updated). This
+        function will populate self.tables using whatever the dbpath is at call
+        time.
+        """
         self.tables = [t for t in os.listdir(self.dbpath) if str(t).istitle()]
 
     def db_stat(self):
@@ -93,6 +105,24 @@ class RPMUtil:
         for check in checks:
             if not check(proc):
                 raise DBIndexNeedsRebuild
+
+    @memoize
+    def _read_os_release(self):
+        # type: () -> Dict[str, str]
+        """
+        Read /etc/os-release (if it exists) and parse the key/value data into
+        a dict.
+        """
+        data = {}
+        if os.path.exists("/etc/os-release"):
+            with open("/etc/os-release", "r") as f:
+                for line in f:
+                    if line.strip() == "":
+                        continue
+                    (key, value) = line.split("=", 2)
+                    data[key.strip()] = value.strip()
+
+        return data
 
     def check_rpmdb_indexes(self):
         # type: () -> None
@@ -171,6 +201,40 @@ class RPMUtil:
             "Transfiletriggername": None,  # rarely used
             "Triggername": None,  # rarely used
         }
+
+        # For some platforms, the command and/or checks need to be tweaked
+        os_release_data = self._read_os_release()
+        os_id = os_release_data.get("ID", "")
+        if os_id == "fedora":
+            # Fedora has two differences from CentOS:
+            # - For Conflictname, initscripts is installed, but no capabilities
+            #   conflict with it. systemd is another mandatory core package
+            #   which does have capabilities which conflict with it, but it only
+            #   has two (as of Fedora 28/29).
+            # - For Obsoletename, coreutils only obsoletes older versions of
+            #   itself.
+            rpmdb_indexes.update(
+                {
+                    "Conflictname": {
+                        "cmd": "{} -q --conflicts systemd --dbpath {}".format(
+                            self.rpm_path, self.dbpath
+                        ),
+                        "checks": [
+                            lambda proc: proc.returncode != StatusCode.SEGFAULT,
+                            lambda proc: len(proc.stdout.splitlines()) >= 2,
+                        ],
+                    },
+                    "Obsoletename": {
+                        "cmd": "{} -q --obsoletes coreutils --dbpath {}".format(
+                            self.rpm_path, self.dbpath
+                        ),
+                        "checks": [
+                            lambda proc: proc.returncode != StatusCode.SEGFAULT,
+                            lambda proc: len(proc.stdout.splitlines()) >= 1,
+                        ],
+                    },
+                }
+            )
 
         # Checks for Packages db corruption
         post_checks = [

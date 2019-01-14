@@ -1,2 +1,2 @@
 include LICENSE README.md CONTRIBUTING.md HISTORY.md CODE_OF_CONDUCT.md MANUAL_RPM_CLEANUP.md
-recursive-include tests *.py
+recursive-include tests *.py *.json *.tar.gz

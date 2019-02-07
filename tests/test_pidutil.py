@@ -20,8 +20,12 @@ except ImportError:
     from mock import mock_open, patch
 
 from dcrpm import pidutil
+from dcrpm.util import CompletedProcess, DcRPMException
 from tests.mock_process import make_mock_process
 
+
+BASE = __name__ + ".pidutil"
+run_str = BASE + ".run_with_timeout"
 
 stat_result = namedtuple("stat_result", ["st_mtime"])
 
@@ -37,43 +41,33 @@ else:
 
 class TestPidutil(unittest.TestCase):
     # procs_holding_file
-    def test_procs_holding_file_none(self):
-        procs = [
-            make_mock_process(12345, ["/tmp/1", "/tmp/2"]),
-            make_mock_process(54321, ["/tmp/1", "/tmp/3"]),
-        ]
-        with patch("psutil.process_iter", return_value=procs):
-            pids = pidutil.procs_holding_file("/tmp/a")
-        self.assertEqual(len(pids), 0)
+    def test_procs_holding_file_no_lsof(self):
+        with patch("dcrpm.pidutil.which", return_value=None):
+            with self.assertRaises(DcRPMException):
+                pidutil.procs_holding_file("/tmp/foo")
 
-    def test_procs_holding_file_some(self):
-        procs = [
-            make_mock_process(12345, ["/tmp/a", "/tmp/2"]),
-            make_mock_process(54321, ["/tmp/1", "/tmp/3"]),
-        ]
-        with patch("psutil.process_iter", return_value=procs):
-            procs = pidutil.procs_holding_file("/tmp/a")
-            self.assertEqual(len(procs), 1)
+    # _pids_holding_file
+    def test__pids_holding_file_timeout(self):
+        with patch(run_str, side_effect=DcRPMException()):
+            self.assertEqual(
+                set(), pidutil._pids_holding_file("/path/to/lsof", "/tmp/foo")
+            )
 
-    def test_procs_holding_file_no_process(self):
-        procs = [
-            # throw only on the one that would match.
-            make_mock_process(12345, ["/tmp/a", "/tmp/2"], as_dict_throw=True),
-            make_mock_process(54321, ["/tmp/1", "/tmp/3"]),
-        ]
-        with patch("psutil.process_iter", return_value=procs):
-            procs = pidutil.procs_holding_file("/tmp/a")
-        self.assertEqual(len(procs), 0)
+    def test__pids_holding_file_failed(self):
+        with patch(
+            run_str, return_value=CompletedProcess(returncode=1, stderr="oh no")
+        ):
+            self.assertEqual(
+                set(), pidutil._pids_holding_file("/path/to/lsof", "/tmp/foo")
+            )
 
-    def test_procs_holding_file_timeout(self):
-        procs = [
-            make_mock_process(12345, ["/tmp/a", "/tmp/2"]),
-            make_mock_process(54321, ["/tmp/1", "/tmp/3"]),
-            make_mock_process(12346, ["/tmp/a", "/tmp/3"], timeout=True),
-        ]
-        with patch("psutil.process_iter", return_value=procs):
-            procs = pidutil.procs_holding_file("/tmp/a")
-            self.assertEqual(len(procs), 1)
+    def test__pids_holding_file_success(self):
+        lsof_stdout = "\n".join(["p12345", "f1", "p123456", "f1"])
+        with patch(run_str, return_value=CompletedProcess(stdout=lsof_stdout)):
+            self.assertEqual(
+                set([12345, 123456]),
+                pidutil._pids_holding_file("/path/to/lsof", "/tmp/a"),
+            )
 
     # send_signal
     def test_send_signal_success(self):

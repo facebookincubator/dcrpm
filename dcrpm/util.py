@@ -86,6 +86,7 @@ class RepairAction:
     STUCK_YUM = 4
     CLEAN_YUM_TRANSACTIONS = 5
     INDEX_REBUILD = 6
+    KILL_DB001_PIDS = 7
 
 
 class Result:
@@ -102,6 +103,7 @@ ACTION_NAMES = {
     RepairAction.NO_ACTION: "no_action",
     RepairAction.DB_RECOVERY: "db_recovery",
     RepairAction.TABLE_REBUILD: "table_rebuild",
+    RepairAction.KILL_DB001_PIDS: "kill_db001_pids",
     RepairAction.KILL_LOCK_PIDS: "kill_lock_pids",
     RepairAction.STUCK_YUM: "stuck_yum",
     RepairAction.CLEAN_YUM_TRANSACTIONS: "cleanup_yum_transactions",
@@ -223,6 +225,7 @@ def kindly_end(proc, timeout=END_TIMEOUT):
     return rc
 
 
+@memoize
 def which(cmd):
     try:
         from shutil import which

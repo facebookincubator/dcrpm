@@ -23,7 +23,7 @@ MIN_PID = 2  # Don't kill init/launchd or kernel_task
 logger = logging.getLogger()
 
 
-def pids_holding_file(path):
+def procs_holding_file(path):
     # type: str -> Set[psutil.Process]
     """
     Returns a list of pids holding open file `path`.

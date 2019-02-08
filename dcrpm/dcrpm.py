@@ -159,18 +159,18 @@ class DcRPM:
         self.logger.info("Attempting to fix RPM DB at %s", self.args.dbpath)
         dbenv_lockfile = join(self.args.dbpath, ".dbenv.lock")
         rpm_lockfile = join(self.args.dbpath, ".rpm.lock")
-        lock_pids = pidutil.pids_holding_file(dbenv_lockfile)
-        lock_pids |= pidutil.pids_holding_file(rpm_lockfile)
+        lock_procs = pidutil.procs_holding_file(dbenv_lockfile)
+        lock_procs |= pidutil.procs_holding_file(rpm_lockfile)
 
-        self.logger.debug("Found %d pids holding lock files", len(lock_pids))
-        if lock_pids and pidutil.send_signals(lock_pids, signal.SIGKILL):
+        self.logger.debug("Found %d pids holding lock files", len(lock_procs))
+        if lock_procs and pidutil.send_signals(lock_procs, signal.SIGKILL):
             self.logger.debug("Killed pids holding lock files")
             self.status_logger.warning("killed_lock_users")
             return
 
         # Hardlink to __db.001 and kill holders of that file.
         hardlink = self.hardlink_db001()
-        pidutil.send_signals(pidutil.pids_holding_file(hardlink), signal.SIGKILL)
+        pidutil.send_signals(pidutil.procs_holding_file(hardlink), signal.SIGKILL)
         os.unlink(hardlink)
 
         # Run the recovery.

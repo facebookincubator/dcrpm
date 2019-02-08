@@ -36,43 +36,43 @@ else:
 
 
 class TestPidutil(unittest.TestCase):
-    # pids_holding_file
-    def test_pids_holding_file_none(self):
+    # procs_holding_file
+    def test_procs_holding_file_none(self):
         procs = [
             make_mock_process(12345, ["/tmp/1", "/tmp/2"]),
             make_mock_process(54321, ["/tmp/1", "/tmp/3"]),
         ]
         with patch("psutil.process_iter", return_value=procs):
-            pids = pidutil.pids_holding_file("/tmp/a")
+            pids = pidutil.procs_holding_file("/tmp/a")
         self.assertEqual(len(pids), 0)
 
-    def test_pids_holding_file_some(self):
+    def test_procs_holding_file_some(self):
         procs = [
             make_mock_process(12345, ["/tmp/a", "/tmp/2"]),
             make_mock_process(54321, ["/tmp/1", "/tmp/3"]),
         ]
         with patch("psutil.process_iter", return_value=procs):
-            procs = pidutil.pids_holding_file("/tmp/a")
+            procs = pidutil.procs_holding_file("/tmp/a")
             self.assertEqual(len(procs), 1)
 
-    def test_pids_holding_file_no_process(self):
+    def test_procs_holding_file_no_process(self):
         procs = [
             # throw only on the one that would match.
             make_mock_process(12345, ["/tmp/a", "/tmp/2"], as_dict_throw=True),
             make_mock_process(54321, ["/tmp/1", "/tmp/3"]),
         ]
         with patch("psutil.process_iter", return_value=procs):
-            procs = pidutil.pids_holding_file("/tmp/a")
+            procs = pidutil.procs_holding_file("/tmp/a")
         self.assertEqual(len(procs), 0)
 
-    def test_pids_holding_file_timeout(self):
+    def test_procs_holding_file_timeout(self):
         procs = [
             make_mock_process(12345, ["/tmp/a", "/tmp/2"]),
             make_mock_process(54321, ["/tmp/1", "/tmp/3"]),
             make_mock_process(12346, ["/tmp/a", "/tmp/3"], timeout=True),
         ]
         with patch("psutil.process_iter", return_value=procs):
-            procs = pidutil.pids_holding_file("/tmp/a")
+            procs = pidutil.procs_holding_file("/tmp/a")
             self.assertEqual(len(procs), 1)
 
     # send_signal

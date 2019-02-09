@@ -86,7 +86,7 @@ class Yum:
         were busted
         """
         try:
-            cmd = "{} clean expire-cache".format(YUM_CMD_NAME)
+            cmd = [YUM_CMD_NAME, "clean", "expire-cache"]
             run_with_timeout(cmd, YUM_TIMEOUT_SEC)
         except DcRPMException:
             raise DBNeedsRebuild
@@ -97,7 +97,7 @@ class Yum:
         Run yum check - which "Checks for problems in the rpmdb"
         """
         try:
-            cmd = "{} check".format(YUM_CMD_NAME)
+            cmd = [YUM_CMD_NAME, "check"]
             run_with_timeout(cmd, YUM_TIMEOUT_SEC)
         except DcRPMException:
             raise DBNeedsRebuild

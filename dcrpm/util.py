@@ -165,20 +165,16 @@ def call_with_timeout(func, timeout, raise_=True, args=None, kwargs=None):
 
 
 def run_with_timeout(cmd, timeout, raise_on_nonzero=True, raise_on_timeout=True):
-    # type: (str, int, bool) -> CompletedProcess
+    # type: (List[str], int, bool) -> CompletedProcess
     """
     Runs command `cmd` with timeout `timeout`. If `raise_on_nonzero` is True,
     raises a DcRPMException if `cmd` exits with a nonzero status. If
     `raise_on_timeout` is true, raises a DcRPMException if `cmd` times out.
     """
     _logger.debug("Running %s", cmd)
-    cmdname = cmd.split()[0]
+    cmdname = cmd[0]
     proc = subprocess.Popen(
-        cmd,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
     )
     try:
         stdout, stderr = call_with_timeout(proc.communicate, timeout)

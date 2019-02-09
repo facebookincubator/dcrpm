@@ -71,11 +71,10 @@ class TestUtil(unittest.TestCase):
     # run_with_timeout
     @patch("subprocess.Popen", return_value=make_mock_popen())
     def test_run_with_timeout_success(self, mock_popen):
-        result = run_with_timeout("/bin/true", 5)
+        result = run_with_timeout(["/bin/true", "noop"], 5)
         self.assertEqual(result.returncode, 0)
         mock_popen.assert_called_once_with(
-            "/bin/true",
-            shell=True,
+            ["/bin/true", "noop"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,

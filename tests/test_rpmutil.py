@@ -9,6 +9,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os.path
 import unittest
 from typing import Dict
 
@@ -85,7 +86,7 @@ class TestRPMUtil(unittest.TestCase):
         test_rpm_name = "foo"
         self.rpmutil.query("foo")
         self.assertIn(
-            "{} --dbpath {} -q {}".format(self.rpm_path, self.dbpath, test_rpm_name),
+            [self.rpm_path, "--dbpath", self.dbpath, "-q", test_rpm_name],
             mock_run.call_args[0],
         )
         self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
@@ -113,8 +114,7 @@ class TestRPMUtil(unittest.TestCase):
     def test_check_rpm_qa_success(self, mock_run):
         self.rpmutil.check_rpm_qa()
         self.assertIn(
-            "{} --dbpath {} -qa".format(self.rpm_path, self.dbpath),
-            mock_run.call_args[0],
+            [self.rpm_path, "--dbpath", self.dbpath, "-qa"], mock_run.call_args[0]
         )
         self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
         mock_run.assert_called_once()
@@ -129,8 +129,7 @@ class TestRPMUtil(unittest.TestCase):
         with self.assertRaises(DBNeedsRecovery):
             self.rpmutil.check_rpm_qa()
         self.assertIn(
-            "{} --dbpath {} -qa".format(self.rpm_path, self.dbpath),
-            mock_run.call_args[0],
+            [self.rpm_path, "--dbpath", self.dbpath, "-qa"], mock_run.call_args[0]
         )
         self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
         mock_run.assert_called_once()
@@ -140,8 +139,7 @@ class TestRPMUtil(unittest.TestCase):
         with self.assertRaises(DBNeedsRecovery):
             self.rpmutil.check_rpm_qa()
         self.assertIn(
-            "{} --dbpath {} -qa".format(self.rpm_path, self.dbpath),
-            mock_run.call_args[0],
+            [self.rpm_path, "--dbpath", self.dbpath, "-qa"], mock_run.call_args[0]
         )
         self.assertIn(rpmutil.RPM_CHECK_TIMEOUT_SEC, mock_run.call_args[0])
         mock_run.assert_called_once()
@@ -150,9 +148,7 @@ class TestRPMUtil(unittest.TestCase):
     @patch(run_str, return_value=CompletedProcess())
     def test_recover_db_success(self, mock_run):
         self.rpmutil.recover_db()
-        self.assertIn(
-            "{} -h {}".format(self.recover_path, self.dbpath), mock_run.call_args[0]
-        )
+        self.assertIn([self.recover_path, "-h", self.dbpath], mock_run.call_args[0])
         self.assertIn(rpmutil.RECOVER_TIMEOUT_SEC, mock_run.call_args[0])
         mock_run.assert_called_once()
 
@@ -161,16 +157,34 @@ class TestRPMUtil(unittest.TestCase):
     def test_rebuild_db_success(self, mock_run):
         self.rpmutil.rebuild_db()
         self.assertIn(
-            "{} --dbpath {} --rebuilddb".format(self.rpm_path, self.dbpath),
+            [self.rpm_path, "--dbpath", self.dbpath, "--rebuilddb"],
             mock_run.call_args[0],
         )
         self.assertIn(rpmutil.REBUILD_TIMEOUT_SEC, mock_run.call_args[0])
         mock_run.assert_called_once()
 
-    # check_tables
-    @patch(run_str, return_value=CompletedProcess(returncode=1))
+    @patch(run_str)
     def test_check_tables_success(self, mock_run):
+        mock_run.side_effect = [
+            CompletedProcess(stdout="bar\nfoo\n"),
+            CompletedProcess(stdout="bar-1.2.3.x86_64\nfoo-4.5.6.x86_64\n"),
+        ]
         self.rpmutil.check_tables()
+
+    @patch(run_str)
+    def test_check_tables_success_no_rpms(self, mock_run):
+        mock_run.side_effect = [CompletedProcess(stdout="")]
+        self.rpmutil.check_tables()
+        self.assertEqual(mock_run.call_count, 1)
+
+    @patch(run_str)
+    def test_check_tables_failed(self, mock_run):
+        mock_run.side_effect = [
+            CompletedProcess(stdout="bar\nfoo\n"),
+            CompletedProcess(stdout="bar-1.2.3.x86_64\nfoo is not installed\n"),
+        ]
+        with self.assertRaises(DcRPMException):
+            self.rpmutil.check_tables()
 
     # verify_tables
     @patch(run_str, side_effect=2 * [CompletedProcess()])
@@ -180,12 +194,12 @@ class TestRPMUtil(unittest.TestCase):
         mock_run.assert_has_calls(
             [
                 call(
-                    "{} {}/table0".format(self.verify_path, self.dbpath),
+                    [self.verify_path, os.path.join(self.dbpath, "table0")],
                     rpmutil.VERIFY_TIMEOUT_SEC,
                     raise_on_nonzero=False,
                 ),
                 call(
-                    "{} {}/table3".format(self.verify_path, self.dbpath),
+                    [self.verify_path, os.path.join(self.dbpath, "table3")],
                     rpmutil.VERIFY_TIMEOUT_SEC,
                     raise_on_nonzero=False,
                 ),
@@ -203,7 +217,7 @@ class TestRPMUtil(unittest.TestCase):
         with self.assertRaises(DcRPMException):
             self.rpmutil.verify_tables()
         mock_run.assert_called_once_with(
-            "{} {}/table0".format(self.verify_path, self.dbpath),
+            [self.verify_path, os.path.join(self.dbpath, "table0")],
             rpmutil.VERIFY_TIMEOUT_SEC,
             raise_on_nonzero=False,
         )
@@ -213,8 +227,7 @@ class TestRPMUtil(unittest.TestCase):
     def test_clean_yum_transactions_success(self, mock_run):
         self.rpmutil.clean_yum_transactions()
         self.assertIn(
-            "{} --cleanup".format(self.yum_complete_transaction_path),
-            mock_run.call_args[0],
+            [self.yum_complete_transaction_path, "--cleanup"], mock_run.call_args[0]
         )
         self.assertIn(rpmutil.YUM_COMPLETE_TIMEOUT_SEC, mock_run.call_args[0])
         mock_run.assert_called_once()

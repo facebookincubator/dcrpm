@@ -21,8 +21,7 @@ except ImportError:
 
 from dcrpm.dcrpm import DcRPM
 from dcrpm.rpmutil import RPMUtil
-from dcrpm.util import DcRPMException
-
+from dcrpm.util import DcRPMException, run_with_timeout, which
 
 MockPopenFile = namedtuple("MockPopenFile", ["path"])
 statvfs_result = namedtuple("statvfs_result", ["f_bsize", "f_bfree"])
@@ -30,12 +29,14 @@ statvfs_result = namedtuple("statvfs_result", ["f_bsize", "f_bfree"])
 
 class TestDcRPM(unittest.TestCase):
     def setUp(self):
-        self.rpm_path = "/usr/bin/rpm"
-        self.dbpath = "/var/lib/rpm"
-        self.recover_path = "/usr/bin/db_recover"
-        self.verify_path = "/usr/bin/db_verify"
-        self.stat_path = "/usr/bin/db_stat"
-        self.yum_complete_transaction_path = "/usr/bin/yum-complete-transaction"
+        self.rpm_path = which("rpm")
+        self.dbpath = run_with_timeout(
+            [self.rpm_path, "--eval", "%{_dbpath}"], 5
+        ).stdout.strip()
+        self.recover_path = which("db_recover")
+        self.verify_path = which("db_verify")
+        self.stat_path = which("db_stat")
+        self.yum_complete_transaction_path = which("yum-complete-transaction")
         self.blacklist = ["table1", "table2"]
         self.rpmutil = RPMUtil(
             dbpath=self.dbpath,

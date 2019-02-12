@@ -14,37 +14,66 @@ import os
 
 import psutil
 
-from dcrpm.util import TimeoutExpired, call_with_timeout
+from dcrpm.util import (
+    DcRPMException,
+    StatusCode,
+    TimeoutExpired,
+    run_with_timeout,
+    which,
+)
 
 
 DEFAULT_TIMEOUT = 5  # seconds
+LSOF_TIMEOUT = 60  # seconds (macOS `lsof` is slow)
 MIN_PID = 2  # Don't kill init/launchd or kernel_task
 
 logger = logging.getLogger()
 
 
-def pids_holding_file(path):
+def process(pid):
+    # type: (int) -> Optional[psutil.Process]
+    """
+    Thin wrapper around psutil.Process with exception handling, mainly for
+    encapsulation.
+    """
+    try:
+        return psutil.Process(pid)
+    except psutil.NoSuchProcess:
+        logging.error("Pid %d does not exist or is no longer active", pid)
+        return None
+
+
+def _pids_holding_file(lsof, path):
+    # type: (str, str) -> Set[int]
+    try:
+        cmd = "{} -F p {}".format(lsof, path)
+        proc = run_with_timeout(cmd, LSOF_TIMEOUT, raise_on_nonzero=False)
+    except DcRPMException:
+        logger.warning("lsof timed out")
+        return set()
+
+    if proc.returncode != StatusCode.SUCCESS and proc.stderr:
+        # `lsof` has pretty coarse error reporting. Returning nonzero means either
+        # nothing matched or something went wrong. If nothing matches stderr will
+        # be empty; if it contains output then assume something went wrong (though
+        # "wrong" could be a fairly benign warning, like `path` not existing).
+        logger.warning("lsof returned non-zero: %s", proc.stderr)
+
+    return {int(line[1:]) for line in proc.stdout.splitlines() if line.startswith("p")}
+
+
+def procs_holding_file(path):
     # type: str -> Set[psutil.Process]
     """
-    Returns a list of pids holding open file `path`.
+    Return a set of processes holding `path` open by using `lsof`. `lsof` is slower but
+    will find processes that have other links to the same inode open.
     """
-    procs = set()
-    for proc in psutil.process_iter():
-        try:
-            pinfo = call_with_timeout(
-                proc.as_dict, DEFAULT_TIMEOUT, kwargs={"attrs": ["pid", "open_files"]}
-            )
-        except (psutil.NoSuchProcess, TimeoutExpired):
-            continue
+    lsof = which("lsof")
+    if lsof is None:
+        raise DcRPMException("Couldn't find `lsof` binary")
 
-        # Sometimes open_files can be None.
-        open_files = pinfo.get("open_files", [])
-        if not open_files:
-            continue
-
-        if path in [f.path for f in open_files]:
-            procs.add(proc)
-    return procs
+    procs = [process(pid) for pid in _pids_holding_file(lsof, path)]
+    return set(filter(None, procs))
 
 
 def pidfile_info(pidfile):
@@ -102,16 +131,3 @@ def send_signals(procs, signal, timeout=DEFAULT_TIMEOUT):
     """
     was_killed = [send_signal(p, signal, timeout) for p in procs]
     return any(was_killed)
-
-
-def process(pid):
-    # type: (int) -> Optional[psutil.Process]
-    """
-    Thin wrapper around psutil.Process with exception handling, mainly for
-    encapsulation.
-    """
-    try:
-        return psutil.Process(pid)
-    except psutil.NoSuchProcess:
-        logging.error("Pid %d does not exist or is no longer active", pid)
-        return None

@@ -142,9 +142,10 @@ class DcRPM:
         # type: () -> None
         """
         Performs DB recovery by doing the following:
-            * Kills pids holding the .dbenv.lock file
+            * Kills pids holding the .dbenv.lock or .rpm.lock files
             * Hardlinks the __db.001 file (since db_recovery blows it away)
             * Runs db_recovery
+            * Kills pids still holding the __db.001 file
         """
         self.status_logger.info(RepairAction.DB_RECOVERY)
         if self.args.dry_run:
@@ -159,22 +160,28 @@ class DcRPM:
         self.logger.info("Attempting to fix RPM DB at %s", self.args.dbpath)
         dbenv_lockfile = join(self.args.dbpath, ".dbenv.lock")
         rpm_lockfile = join(self.args.dbpath, ".rpm.lock")
-        lock_pids = pidutil.pids_holding_file(dbenv_lockfile)
-        lock_pids |= pidutil.pids_holding_file(rpm_lockfile)
+        lock_procs = pidutil.procs_holding_file(dbenv_lockfile)
+        lock_procs |= pidutil.procs_holding_file(rpm_lockfile)
 
-        self.logger.debug("Found %d pids holding lock files", len(lock_pids))
-        if lock_pids and pidutil.send_signals(lock_pids, signal.SIGKILL):
+        self.logger.debug("Found %d pids holding lock files", len(lock_procs))
+        if lock_procs and pidutil.send_signals(lock_procs, signal.SIGKILL):
             self.logger.debug("Killed pids holding lock files")
-            self.status_logger.warning("killed_lock_users")
+            self.status_logger.info(RepairAction.KILL_LOCK_PIDS)
             return
 
-        # Hardlink to __db.001 and kill holders of that file.
+        # Hardlink to __db.001 so its inode can be found later.
         hardlink = self.hardlink_db001()
-        pidutil.send_signals(pidutil.pids_holding_file(hardlink), signal.SIGKILL)
-        os.unlink(hardlink)
 
         # Run the recovery.
         self.rpmutil.recover_db()
+
+        # Kill any holders of the (now deleted) __db.001.
+        db001_procs = pidutil.procs_holding_file(hardlink)
+        self.logger.debug("Found %d pids holding RPM DB open", len(db001_procs))
+        if db001_procs and pidutil.send_signals(db001_procs, signal.SIGKILL):
+            self.logger.debug("Killed pids holding RPM DB open")
+            self.status_logger.info(RepairAction.KILL_DB001_PIDS)
+        os.unlink(hardlink)
 
     def run_rebuild(self):
         # type: () -> None

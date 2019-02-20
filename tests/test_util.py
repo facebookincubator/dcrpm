@@ -15,8 +15,8 @@ import signal
 import subprocess
 import time
 import typing as t  # noqa
-import unittest
 
+import testslide
 from dcrpm.util import (
     DcRPMException,
     TimeoutExpired,
@@ -28,9 +28,9 @@ from dcrpm.util import (
 
 
 try:
-    from unittest.mock import MagicMock, Mock, call, patch
+    from unittest.mock import Mock
 except ImportError:
-    from mock import MagicMock, Mock, call, patch
+    from mock import Mock
 
 
 def make_mock_popen(
@@ -57,80 +57,162 @@ def make_mock_popen(
     return mock_popen_obj
 
 
-class TestUtil(unittest.TestCase):
+class TestUtil(testslide.TestCase):
     # call_with_timeout
-    @patch("signal.signal")
-    @patch("signal.alarm")
-    def test_call_with_timeout_success(self, mock_alarm, mock_signal):
-        # type: (MagicMock, MagicMock) -> None
+    def test_call_with_timeout_success(self):
+        # type: () -> None
+        (
+            self.mock_callable(signal, "signal")
+            .for_call(signal.SIGALRM, alarm_handler)
+            .to_return_value(None)
+            .and_assert_called_once()
+        )
+        for val in [2, 0]:
+            (
+                self.mock_callable(signal, "alarm")
+                .for_call(val)
+                .to_return_value(None)
+                .and_assert_called_once()
+            )
         result = call_with_timeout(math.floor, 2, args=[2.5])
         self.assertEqual(result, 2.0)
-        mock_alarm.assert_has_calls([call(2), call(0)])
-        mock_signal.assert_called_once_with(signal.SIGALRM, alarm_handler)
 
     def test_call_with_timeout_real_raises(self):
         # type: () -> None
         with self.assertRaises(TimeoutExpired):
             call_with_timeout(time.sleep, 1, args=[2])
 
+    def test_call_with_timeout_real_no_raises_returns_none(self):
+        # type: () -> None
+        result = call_with_timeout(time.sleep, 1, raise_=False, args=[2])
+        self.assertIsNone(result)
+
     # run_with_timeout
-    @patch("subprocess.Popen", return_value=make_mock_popen())
-    def test_run_with_timeout_success(self, mock_popen):
-        # type: (MagicMock) -> None
+    def test_run_with_timeout_success(self):
+        # type: () -> None
+        (
+            self.mock_callable(subprocess, "Popen")
+            .for_call(
+                "/bin/true",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            .to_return_value(make_mock_popen())
+            .and_assert_called_once()
+        )
         result = run_with_timeout("/bin/true", 5)
         self.assertEqual(result.returncode, 0)
-        mock_popen.assert_called_once_with(
-            "/bin/true",
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-        )
 
-    @patch("subprocess.Popen")
-    def test_run_with_timeout_timeout(self, mock_popen):
-        # type: (MagicMock) -> None
-        mock_popen.return_value = make_mock_popen(communicate_raise=True)
-        with self.assertRaises(DcRPMException):
-            run_with_timeout("/bin/true", 5)
-        mock_popen.return_value.kill.assert_not_called()
-
-    @patch("subprocess.Popen")
-    def test_run_with_timeout_terminates_on_timeout(self, mock_popen):
-        # type: (MagicMock) -> None
-        mock_popen.return_value = make_mock_popen(communicate_raise=True)
-        with self.assertRaises(DcRPMException):
-            run_with_timeout("/bin/true", 5)
-        mock_popen.return_value.terminate.assert_called()
-        mock_popen.return_value.kill.assert_not_called()
-
-    @patch("subprocess.Popen")
-    def test_run_with_timeout_kills_on_terminate_timeout(self, mock_popen):
-        # type: (MagicMock) -> None
-        mock_popen.return_value = make_mock_popen(
-            communicate_raise=True, terminate_raise=True
+    def test_run_with_timeout_timeout(self):
+        # type: () -> None
+        mock_popen = make_mock_popen(communicate_raise=True)
+        (
+            self.mock_callable(subprocess, "Popen")
+            .for_call(
+                "/bin/true",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            .to_return_value(mock_popen)
+            .and_assert_called_once()
         )
         with self.assertRaises(DcRPMException):
             run_with_timeout("/bin/true", 5)
-        mock_popen.return_value.terminate.assert_called()
-        mock_popen.return_value.kill.assert_called()
+        mock_popen.kill.assert_not_called()
 
-    @patch("subprocess.Popen", return_value=make_mock_popen(returncode=1))
-    def test_run_with_timeout_raise_on_nonzero(self, mock_popen):
-        # type: (MagicMock) -> None
+    def test_run_with_timeout_terminates_on_timeout(self):
+        # type: () -> None
+        mock_popen = make_mock_popen(communicate_raise=True)
+        (
+            self.mock_callable(subprocess, "Popen")
+            .for_call(
+                "/bin/true",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            .to_return_value(mock_popen)
+            .and_assert_called_once()
+        )
+        with self.assertRaises(DcRPMException):
+            run_with_timeout("/bin/true", 5)
+        mock_popen.terminate.assert_called()
+        mock_popen.kill.assert_not_called()
+
+    def test_run_with_timeout_kills_on_terminate_timeout(self):
+        # type: () -> None
+        mock_popen = make_mock_popen(communicate_raise=True, terminate_raise=True)
+        (
+            self.mock_callable(subprocess, "Popen")
+            .for_call(
+                "/bin/true",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            .to_return_value(mock_popen)
+            .and_assert_called_once()
+        )
+        with self.assertRaises(DcRPMException):
+            run_with_timeout("/bin/true", 5)
+        mock_popen.terminate.assert_called()
+        mock_popen.kill.assert_called()
+
+    def test_run_with_timeout_raise_on_nonzero(self):
+        # type: () -> None
+        (
+            self.mock_callable(subprocess, "Popen")
+            .for_call(
+                "/bin/true",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            .to_return_value(make_mock_popen(returncode=1))
+            .and_assert_called_once()
+        )
         with self.assertRaises(DcRPMException):
             run_with_timeout("/bin/true", 5)
 
-    @patch("subprocess.Popen", return_value=make_mock_popen(returncode=1))
-    def test_run_with_timeout_no_raise_on_nonzero(self, mock_popen):
-        # type: (MagicMock) -> None
+    def test_run_with_timeout_no_raise_on_nonzero(self):
+        # type: () -> None
+        (
+            self.mock_callable(subprocess, "Popen")
+            .for_call(
+                "/bin/true",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            .to_return_value(make_mock_popen(returncode=1))
+            .and_assert_called_once()
+        )
         result = run_with_timeout("/bin/true", 5, raise_on_nonzero=False)
         self.assertEqual(result.returncode, 1)
 
-    @patch("subprocess.Popen")
-    def test_run_with_timeout_no_raise_on_timeout(self, mock_popen):
-        # type: (MagicMock) -> None
-        mock_popen.return_value = make_mock_popen(returncode=1, communicate_raise=True)
+    def test_run_with_timeout_no_raise_on_timeout(self):
+        # type: () -> None
+        mock_popen = make_mock_popen(returncode=1, communicate_raise=True)
+        (
+            self.mock_callable(subprocess, "Popen")
+            .for_call(
+                "/bin/true",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            .to_return_value(mock_popen)
+            .and_assert_called_once()
+        )
         result = run_with_timeout("/bin/true", 5, raise_on_timeout=False)
         self.assertNotEqual(result.returncode, 1)
         self.assertEqual(result.stdout, "")

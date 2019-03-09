@@ -6,12 +6,14 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import os
 import signal
+import typing as t
 from fnmatch import fnmatch
 from os.path import join
 
@@ -20,16 +22,22 @@ from .util import DBNeedsRebuild, DBNeedsRecovery, DcRPMException, RepairAction
 from .yum import Yum
 
 
+if t.TYPE_CHECKING:
+    import argparse
+
+    from .rpmutil import RPMUtil
+
+
 class DcRPM:
-    YUM_PATH = "/var/lib/yum"
-    YUM_TRANSACTION_BASE = "*transaction-all.*"
+    YUM_PATH = "/var/lib/yum"  # type: str
+    YUM_TRANSACTION_BASE = "*transaction-all.*"  # type: str
 
     def __init__(self, rpmutil, args):
         # type: (RPMUtil, argparse.Namespace) -> None
         self.rpmutil = rpmutil
         self.args = args
-        self.logger = logging.getLogger()
-        self.status_logger = logging.getLogger("status")
+        self.logger = logging.getLogger()  # type: logging.Logger
+        self.status_logger = logging.getLogger("status")  # type: logging.Logger
 
     def run(self):
         # type: () -> bool
@@ -233,7 +241,7 @@ class DcRPM:
         return buf.f_bfree > desired_free_blocks
 
     def call_verify_tables(self):
-        # type: () -> bool:
+        # type: () -> bool
         """
         Because rpmutil.verify_tables requires a different way of exception
         handling (i.e. if a db_verify fails on one of the tables, we might need

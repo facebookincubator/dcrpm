@@ -6,6 +6,7 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -17,18 +18,19 @@ from . import pidutil
 from .util import DBNeedsRebuild, DcRPMException, RepairAction, run_with_timeout
 
 
-YUM_PID_PATH = "/var/run/yum.pid"
-YUM_TIMEOUT_SEC = 30
-MIN_YUM_AGE = 3600 * 6  # 6 hours
-YUM_CMD_NAME = "yum"
-KILL_TIMEOUT = 5  # seconds
+YUM_PID_PATH = "/var/run/yum.pid"  # type: str
+YUM_TIMEOUT_SEC = 30  # type: int
+# 6 hours
+MIN_YUM_AGE = 3600 * 6  # type: int
+YUM_CMD_NAME = "yum"  # type: str
+KILL_TIMEOUT = 5  # type: int
 
 
 class Yum:
     def __init__(self):
         # type: () -> None
-        self.logger = logging.getLogger()
-        self.status_logger = logging.getLogger("status")
+        self.logger = logging.getLogger()  # type: logging.Logger
+        self.status_logger = logging.getLogger("status")  # type: logging.Logger
 
     def check_stuck(self, dry_run=False):
         # type: (bool) -> bool

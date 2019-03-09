@@ -6,6 +6,7 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -13,8 +14,9 @@ import logging
 import os
 
 import psutil
+import typing as t
 
-from dcrpm.util import (
+from .util import (
     DcRPMException,
     StatusCode,
     TimeoutExpired,
@@ -22,16 +24,21 @@ from dcrpm.util import (
     which,
 )
 
+if t.TYPE_CHECKING:
+    import enum
 
-DEFAULT_TIMEOUT = 5  # seconds
-LSOF_TIMEOUT = 60  # seconds (macOS `lsof` is slow)
-MIN_PID = 2  # Don't kill init/launchd or kernel_task
 
-logger = logging.getLogger()
+DEFAULT_TIMEOUT = 5  # type: int
+# Seconds (macOS `lsof` is slow)
+LSOF_TIMEOUT = 60  # type: int
+# Don't kill init/launchd or kernel_task
+MIN_PID = 2  # type: int
+
+logger = logging.getLogger()  # type: logging.Logger
 
 
 def process(pid):
-    # type: (int) -> Optional[psutil.Process]
+    # type: (int) -> t.Optional[psutil.Process]
     """
     Thin wrapper around psutil.Process with exception handling, mainly for
     encapsulation.
@@ -44,7 +51,7 @@ def process(pid):
 
 
 def _pids_holding_file(lsof, path):
-    # type: (str, str) -> Set[int]
+    # type: (str, str) -> t.Set[int]
     try:
         cmd = "{} -F p {}".format(lsof, path)
         proc = run_with_timeout(cmd, LSOF_TIMEOUT, raise_on_nonzero=False)
@@ -63,7 +70,7 @@ def _pids_holding_file(lsof, path):
 
 
 def procs_holding_file(path):
-    # type: str -> Set[psutil.Process]
+    # type: (str) -> t.Set[psutil.Process]
     """
     Return a set of processes holding `path` open by using `lsof`. `lsof` is slower but
     will find processes that have other links to the same inode open.
@@ -77,7 +84,7 @@ def procs_holding_file(path):
 
 
 def pidfile_info(pidfile):
-    # type: (str) -> Tuple[int, int]
+    # type: (str) -> t.Tuple[int, int]
     """
     Returns tuple of yum.pid pid and file mtime. Raises:
         FileNotFoundError if pidfile doesn't exist
@@ -96,7 +103,7 @@ def pidfile_info(pidfile):
 
 
 def send_signal(proc, sig, timeout=DEFAULT_TIMEOUT):
-    # type: (psutil.Process, IntEnum, int) -> bool
+    # type: (psutil.Process, enum.IntEnum, int) -> bool
     """
     Sends signal `sig` to process `proc`, waiting on each and handles timeouts
     as well as nonexistent pids. Returns whether pid was successfully sent
@@ -124,7 +131,7 @@ def send_signal(proc, sig, timeout=DEFAULT_TIMEOUT):
 
 
 def send_signals(procs, signal, timeout=DEFAULT_TIMEOUT):
-    # type: (Iterable[psutil.Process], IntEnum, int) -> bool
+    # type: (t.Iterable[psutil.Process], enum.IntEnum, int) -> bool
     """
     Sends signal to all processes in `procs`. Returns whether anything was
     successfully signaled.

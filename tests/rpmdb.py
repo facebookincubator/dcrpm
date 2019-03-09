@@ -6,6 +6,7 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -13,18 +14,28 @@ import os
 import shutil
 import tarfile
 import tempfile
+import typing as t
+
+
+RT = t.TypeVar("RT")
+# pyre-ignore[5]: Represents accepting any args.
+F = t.Callable[..., RT]
 
 
 class RPMDB:
 
-    path = ""
+    path = ""  # type: str
 
     @classmethod
     def _decorator(cls, temp_dir):
+        # type: (str) -> t.Callable[[F], F]
         def _inner_decorator(function):
+            # type: (F) -> F
+            # pyre-ignore[2]: *args and **kwargs
             def wrapper(*args, **kwargs):
+                # type: (t.Any, t.Any) -> RT
                 args += (os.path.join(temp_dir, "rpm"),)
-                result = function(*args, **kwargs)
+                result = t.cast(F, function)(*args, **kwargs)
                 try:
                     # Try cleaning up the temp dir
                     shutil.rmtree(temp_dir)
@@ -38,6 +49,7 @@ class RPMDB:
 
     @classmethod
     def _extract_local_tarfile(cls, filename):
+        # type: (str) -> str
         file = os.path.join(cls.path, "{}.tar.gz".format(filename))
         if os.path.isfile(file) and tarfile.is_tarfile(file):
             try:
@@ -54,4 +66,6 @@ class RPMDB:
 
     @classmethod
     def from_file(cls, filename):
+        # type: (str) -> t.Callable[[F], F]
+        # pyre-fixme[7]: Can't seem to infer Callable[[F], F], gets undefined
         return cls._decorator(cls._extract_local_tarfile(filename))

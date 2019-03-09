@@ -6,6 +6,7 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -15,10 +16,12 @@ import re
 import signal
 import sys
 import time
+import typing as t
 
 import psutil
 
 from .util import (
+    CompletedProcess,
     DBIndexNeedsRebuild,
     DBNeedsRebuild,
     DBNeedsRecovery,
@@ -30,12 +33,15 @@ from .util import (
 )
 
 
-RPM_CHECK_TIMEOUT_SEC = 5
-YUM_COMPLETE_TIMEOUT_SEC = 10
-VERIFY_TIMEOUT_SEC = 5
-RECOVER_TIMEOUT_SEC = 90
-REBUILD_TIMEOUT_SEC = 300
-MIN_ACCEPTABLE_PKG_COUNT = 50
+RPM_CHECK_TIMEOUT_SEC = 5  # type: int
+YUM_COMPLETE_TIMEOUT_SEC = 10  # type: int
+VERIFY_TIMEOUT_SEC = 5  # type: int
+RECOVER_TIMEOUT_SEC = 90  # type: int
+REBUILD_TIMEOUT_SEC = 300  # type: int
+MIN_ACCEPTABLE_PKG_COUNT = 50  # type: int
+
+
+Check = t.Callable[[CompletedProcess], bool]
 
 
 class RPMUtil:
@@ -45,16 +51,16 @@ class RPMUtil:
 
     def __init__(
         self,
-        dbpath,
-        rpm_path,
-        recover_path,
-        verify_path,
-        stat_path,
-        yum_complete_transaction_path,
-        blacklist,
-        forensic,
+        dbpath,  # type: str
+        rpm_path,  # type: str
+        recover_path,  # type: str
+        verify_path,  # type: str
+        stat_path,  # type: str
+        yum_complete_transaction_path,  # type: str
+        blacklist,  # type: t.List[str]
+        forensic,  # type:  bool
     ):
-        # type: (str, str, str, str, List[str]) -> None
+        # type: (...) -> None
         self.dbpath = dbpath
         self.rpm_path = rpm_path
         self.recover_path = recover_path
@@ -63,8 +69,8 @@ class RPMUtil:
         self.yum_complete_transaction_path = yum_complete_transaction_path
         self.blacklist = blacklist
         self.forensic = forensic
-        self.logger = logging.getLogger()
-        self.status_logger = logging.getLogger("status")
+        self.logger = logging.getLogger()  # type: logging.Logger
+        self.status_logger = logging.getLogger("status")  # type: logging.Logger
         self.populate_tables()
 
     def populate_tables(self):
@@ -76,7 +82,9 @@ class RPMUtil:
         function will populate self.tables using whatever the dbpath is at call
         time.
         """
-        self.tables = [t for t in os.listdir(self.dbpath) if str(t).istitle()]
+        self.tables = [
+            table for table in os.listdir(self.dbpath) if str(table).istitle()
+        ]  # type: t.List[str]
 
     def db_stat(self):
         # type: () -> None
@@ -98,6 +106,7 @@ class RPMUtil:
             self.logger.error("db_stat -CA failed")
 
     def _poke_index(self, cmd, checks):
+        # type: (str, t.Iterable[Check]) -> None
         """
         Run cmd, and ensure all checks are True. Raise DBIndexNeedsRebuild otherwise
         """
@@ -108,7 +117,7 @@ class RPMUtil:
 
     @memoize
     def _read_os_release(self):
-        # type: () -> Dict[str, str]
+        # type: () -> t.Dict[str, str]
         """
         Read /etc/os-release (if it exists) and parse the key/value data into
         a dict.
@@ -200,7 +209,7 @@ class RPMUtil:
             "Supplementname": None,  # rarely used
             "Transfiletriggername": None,  # rarely used
             "Triggername": None,  # rarely used
-        }
+        }  # type: t.Dict[str, t.Optional[t.Dict[str, t.Union[str, t.Iterable[Check]]]]]
 
         # For some platforms, the command and/or checks need to be tweaked
         os_release_data = self._read_os_release()
@@ -213,28 +222,27 @@ class RPMUtil:
             #   has two (as of Fedora 28/29).
             # - For Obsoletename, coreutils only obsoletes older versions of
             #   itself.
-            rpmdb_indexes.update(
-                {
-                    "Conflictname": {
-                        "cmd": "{} -q --conflicts systemd --dbpath {}".format(
-                            self.rpm_path, self.dbpath
-                        ),
-                        "checks": [
-                            lambda proc: proc.returncode != StatusCode.SEGFAULT,
-                            lambda proc: len(proc.stdout.splitlines()) >= 2,
-                        ],
-                    },
-                    "Obsoletename": {
-                        "cmd": "{} -q --obsoletes coreutils --dbpath {}".format(
-                            self.rpm_path, self.dbpath
-                        ),
-                        "checks": [
-                            lambda proc: proc.returncode != StatusCode.SEGFAULT,
-                            lambda proc: len(proc.stdout.splitlines()) >= 1,
-                        ],
-                    },
-                }
-            )
+            d = {
+                "Conflictname": {
+                    "cmd": "{} -q --conflicts systemd --dbpath {}".format(
+                        self.rpm_path, self.dbpath
+                    ),
+                    "checks": [
+                        lambda proc: proc.returncode != StatusCode.SEGFAULT,
+                        lambda proc: len(proc.stdout.splitlines()) >= 2,
+                    ],
+                },
+                "Obsoletename": {
+                    "cmd": "{} -q --obsoletes coreutils --dbpath {}".format(
+                        self.rpm_path, self.dbpath
+                    ),
+                    "checks": [
+                        lambda proc: proc.returncode != StatusCode.SEGFAULT,
+                        lambda proc: len(proc.stdout.splitlines()) >= 1,
+                    ],
+                },
+            }  # type: t.Dict[str, t.Dict[str, t.Union[str, t.Iterable[Check]]]]
+            rpmdb_indexes.update(d)
 
         # Checks for Packages db corruption
         post_checks = [
@@ -248,18 +256,20 @@ class RPMUtil:
         ]
 
         for index, config in rpmdb_indexes.items():
+            # Skip over indexes with no defined checks / conditions
+            if not config:
+                continue
+
             try:
                 # Skip over non existing indexes
                 if not os.path.join(self.dbpath, index):
                     self.logger.info("{} does not exist".format(index))
                     continue
 
-                # Skip over indexes with no defined checks / conditions
-                if not config:
-                    continue
-
                 self.logger.info("Attempting to selectively poke at %s index", index)
-                self._poke_index(config["cmd"], config["checks"])
+                self._poke_index(
+                    str(config["cmd"]), t.cast(t.List[Check], config["checks"])
+                )
 
             except DBIndexNeedsRebuild:
                 self.status_logger.info(RepairAction.INDEX_REBUILD)
@@ -272,7 +282,7 @@ class RPMUtil:
 
                 # Run the same command again, which should trigger a rebuild
                 proc = run_with_timeout(
-                    config["cmd"], RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
+                    str(config["cmd"]), RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
                 )
 
                 # Sometimes single index rebuilds don't work, as rpm fails to

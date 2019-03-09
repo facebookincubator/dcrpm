@@ -6,6 +6,7 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -21,6 +22,7 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
     # rpm-libs-4.13.1-1.fc26.x86_64
     @RPMDB.from_file("rpmdb_fedora26")
     def test_rpmdb_fedora26(self, dbpath):
+        # type: (str) -> None
         self.rpmutil.dbpath = dbpath
         self.rpmutil.populate_tables()
         self.rpmutil._read_os_release = lambda: {"ID": "fedora"}
@@ -52,6 +54,7 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
     # rpm-libs-4.11.3-25.el7.x86_64
     @RPMDB.from_file("rpmdb_centos7")
     def test_rpmdb_centos7(self, dbpath):
+        # type: (str) -> None
         self.rpmutil.dbpath = dbpath
         self.rpmutil.populate_tables()
         self.rpmutil._read_os_release = lambda: {"ID": "centos"}
@@ -66,6 +69,7 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
     # rpm-libs-4.11.3-25.el7.x86_64
     @RPMDB.from_file("rpmdb_centos7_missing_index")
     def test_rpmdb_centos7_missing_index(self, dbpath):
+        # type: (str) -> None
         self.rpmutil.dbpath = dbpath
         self.rpmutil.populate_tables()
         self.rpmutil._read_os_release = lambda: {"ID": "centos"}

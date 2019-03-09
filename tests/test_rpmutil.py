@@ -6,28 +6,34 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import typing as t
 import unittest
-from typing import Dict
-
-try:
-    from unittest.mock import Mock, call, patch
-except ImportError:
-    from mock import Mock, call, patch
 
 from dcrpm import rpmutil
 from dcrpm.util import CompletedProcess, DBNeedsRebuild, DBNeedsRecovery, DcRPMException
 from tests.mock_process import make_mock_process
 
 
-BASE = __name__ + ".rpmutil"
-run_str = BASE + ".run_with_timeout"
+if t.TYPE_CHECKING:
+    import psutil
+
+
+try:
+    from unittest.mock import MagicMock, Mock, call, patch
+except ImportError:
+    from mock import MagicMock, Mock, call, patch
+
+
+BASE = __name__ + ".rpmutil"  # type: str
+run_str = BASE + ".run_with_timeout"  # type: str
 
 
 def assert_called_like(mock, call_mapping):
-    # type: (Mock, Dict[str, bool]) -> None
+    # type: (Mock, t.Dict[str, bool]) -> None
     """
     Helper function to assert that `mock` was called with the calls listed in
     `call_mapping`, which looks like:
@@ -49,14 +55,17 @@ def assert_called_like(mock, call_mapping):
 
 class TestRPMUtil(unittest.TestCase):
     def setUp(self):
-        self.rpm_path = "/usr/bin/rpm"
-        self.dbpath = "/var/lib/rpm"
-        self.recover_path = "/usr/bin/db_recover"
-        self.verify_path = "/usr/bin/db_verify"
-        self.stat_path = "/usr/bin/db_stat"
-        self.yum_complete_transaction_path = "/usr/bin/yum-complete-transaction"
-        self.blacklist = ["table1", "table2"]
-        self.forensic = (False,)
+        # type: () -> None
+        self.rpm_path = "/usr/bin/rpm"  # type: str
+        self.dbpath = "/var/lib/rpm"  # type: str
+        self.recover_path = "/usr/bin/db_recover"  # type: str
+        self.verify_path = "/usr/bin/db_verify"  # type: str
+        self.stat_path = "/usr/bin/db_stat"  # type: str
+        self.yum_complete_transaction_path = (
+            "/usr/bin/yum-complete-transaction"
+        )  # type: str
+        self.blacklist = ["table1", "table2"]  # type: t.List[str]
+        self.forensic = False  # type: bool
         self.rpmutil = rpmutil.RPMUtil(
             dbpath=self.dbpath,
             rpm_path=self.rpm_path,
@@ -66,7 +75,7 @@ class TestRPMUtil(unittest.TestCase):
             yum_complete_transaction_path=self.yum_complete_transaction_path,
             blacklist=self.blacklist,
             forensic=self.forensic,
-        )
+        )  # type: rpmutil.RPMUtil
         self.rpmutil.tables = [
             "/var/lib/rpm/table0",
             "/var/lib/rpm/table1",
@@ -82,6 +91,7 @@ class TestRPMUtil(unittest.TestCase):
         ),
     )
     def test_query_success(self, mock_run):
+        # type: (MagicMock) -> None
         test_rpm_name = "foo"
         self.rpmutil.query("foo")
         self.assertIn(
@@ -98,6 +108,7 @@ class TestRPMUtil(unittest.TestCase):
         ),
     )
     def test_query_failure(self, mock_run):
+        # type: (MagicMock) -> None
         with self.assertRaises(DBNeedsRebuild):
             self.rpmutil.query("foo")
 
@@ -111,6 +122,7 @@ class TestRPMUtil(unittest.TestCase):
         ),
     )
     def test_check_rpm_qa_success(self, mock_run):
+        # type: (MagicMock) -> None
         self.rpmutil.check_rpm_qa()
         self.assertIn(
             "{} --dbpath {} -qa".format(self.rpm_path, self.dbpath),
@@ -126,6 +138,7 @@ class TestRPMUtil(unittest.TestCase):
         ),
     )
     def test_check_rpm_qa_not_enough_packages(self, mock_run):
+        # type: (MagicMock) -> None
         with self.assertRaises(DBNeedsRecovery):
             self.rpmutil.check_rpm_qa()
         self.assertIn(
@@ -137,6 +150,7 @@ class TestRPMUtil(unittest.TestCase):
 
     @patch(run_str, return_value=CompletedProcess(returncode=1))
     def test_check_rpm_qa_raise_on_nonzero_rc(self, mock_run):
+        # type: (MagicMock) -> None
         with self.assertRaises(DBNeedsRecovery):
             self.rpmutil.check_rpm_qa()
         self.assertIn(
@@ -149,6 +163,7 @@ class TestRPMUtil(unittest.TestCase):
     # recover_db
     @patch(run_str, return_value=CompletedProcess())
     def test_recover_db_success(self, mock_run):
+        # type: (MagicMock) -> None
         self.rpmutil.recover_db()
         self.assertIn(
             "{} -h {}".format(self.recover_path, self.dbpath), mock_run.call_args[0]
@@ -159,6 +174,7 @@ class TestRPMUtil(unittest.TestCase):
     # rebuild_db
     @patch(run_str, return_value=CompletedProcess())
     def test_rebuild_db_success(self, mock_run):
+        # type: (MagicMock) -> None
         self.rpmutil.rebuild_db()
         self.assertIn(
             "{} --dbpath {} --rebuilddb".format(self.rpm_path, self.dbpath),
@@ -170,11 +186,13 @@ class TestRPMUtil(unittest.TestCase):
     # check_tables
     @patch(run_str, return_value=CompletedProcess(returncode=1))
     def test_check_tables_success(self, mock_run):
+        # type: (MagicMock) -> None
         self.rpmutil.check_tables()
 
     # verify_tables
     @patch(run_str, side_effect=2 * [CompletedProcess()])
     def test_verify_tables_success(self, mock_run):
+        # type: (MagicMock) -> None
         self.rpmutil.verify_tables()
         self.assertEqual(mock_run.call_count, 2)
         mock_run.assert_has_calls(
@@ -194,12 +212,14 @@ class TestRPMUtil(unittest.TestCase):
 
     @patch(run_str)
     def test_verify_tables_all_blacklisted(self, mock_run):
+        # type: (MagicMock) -> None
         self.rpmutil.tables = self.rpmutil.tables[1:3]
         self.rpmutil.verify_tables()
         self.assertEqual(mock_run.call_count, 0)
 
     @patch(run_str, side_effect=2 * [CompletedProcess(returncode=1)])
     def test_verify_tables_fail(self, mock_run):
+        # type: (MagicMock) -> None
         with self.assertRaises(DcRPMException):
             self.rpmutil.verify_tables()
         mock_run.assert_called_once_with(
@@ -211,6 +231,7 @@ class TestRPMUtil(unittest.TestCase):
     # clean_yum_transactions
     @patch(run_str, return_value=CompletedProcess(returncode=0))
     def test_clean_yum_transactions_success(self, mock_run):
+        # type: (MagicMock) -> None
         self.rpmutil.clean_yum_transactions()
         self.assertIn(
             "{} --cleanup".format(self.yum_complete_transaction_path),
@@ -223,7 +244,8 @@ class TestRPMUtil(unittest.TestCase):
     @patch("psutil.process_iter")
     @patch("time.time")
     def test_kill_spinning_rpm_query_processes_success(self, mock_time, mock_iter):
-        mock_time.return_value = 10000
+        # type: (MagicMock, MagicMock) -> None
+        mock_time.return_value = 10000  # type: int
         young_rpm = make_mock_process(
             123, cmdline="rpm -q foo-124.x86_64", create_time=9000
         )
@@ -259,7 +281,7 @@ class TestRPMUtil(unittest.TestCase):
             old_usr_bin_rpm_wait_throw,
             old_usr_bin_rpm_cmdline_throw,
             young_bin_rpm,
-        ]
+        ]  # type: t.List[psutil.Process]
 
         self.rpmutil.kill_spinning_rpm_query_processes()
 

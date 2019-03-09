@@ -40,6 +40,10 @@ matrix:
       python: 3.6
       install: pip install black
       script: black --check .
+    - name: "Pyre typechecking"
+      python: 3.6
+      install: pip install pyre-check
+      script: scripts/run_pyre_venv.sh
 
 before_install: |
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then

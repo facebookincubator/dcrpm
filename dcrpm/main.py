@@ -6,6 +6,7 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import
 from __future__ import division
@@ -17,6 +18,7 @@ import json
 import logging
 import logging.config
 import sys
+import typing as t  # noqa
 
 from . import __version__
 from .dcrpm import DcRPM
@@ -24,12 +26,12 @@ from .rpmutil import RPMUtil
 from .util import which
 
 # Some sensible defaults.
-DEFAULT_MAX_PASSES = 5
+DEFAULT_MAX_PASSES = 5  # type: int
 
 # Taken from the original C++ dcrpm
-DEFAULT_MIN_REQUIRED_FREE_SPACE = 150 * 1048576
+DEFAULT_MIN_REQUIRED_FREE_SPACE = 150 * 1048576  # type: int
 
-LOG_FORMAT = "%(asctime)s %(levelname)s [%(module)s.%(funcName)s]: %(message)s"
+LOG_FORMAT = "%(asctime)s %(levelname)s [%(module)s.%(funcName)s]: %(message)s"  # type: str
 DEFAULT_LOGGING_CONFIG = {
     "version": 1,
     "formatters": {"standard": {"format": LOG_FORMAT}},
@@ -56,10 +58,11 @@ DEFAULT_LOGGING_CONFIG = {
         "": {"handlers": ["console", "file"]},
         "status": {"handlers": ["console", "forensic_logger"]},
     },
-}
+}  # type: t.Dict[str, t.Any]
 
 
 def parse_args():
+    # type: () -> argparse.Namespace
     parser = argparse.ArgumentParser(
         prog="dcrpm", formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -155,6 +158,7 @@ def parse_args():
 
 
 def main():
+    # type: () -> int
     args = parse_args()
 
     # Set up logging
@@ -184,6 +188,7 @@ def main():
         msg = "exception: {}".format(e)
         logging.getLogger("status").error("exception")
         logging.getLogger().error(msg)
+        return 1
 
 
 if __name__ == "__main__":

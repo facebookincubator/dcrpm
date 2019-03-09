@@ -6,28 +6,28 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from collections import namedtuple
-from typing import List, Optional  # noqa
+import typing as t
 
 import psutil
+from dcrpm.util import TimeoutExpired
+
 
 try:
     from unittest.mock import create_autospec
 except ImportError:
     from mock import create_autospec
 
-from dcrpm.util import TimeoutExpired
 
-
-MockPopenFile = namedtuple("MockPopenFile", ["path"])
+MockPopenFile = t.NamedTuple("MockPopenFile", [("path", str)])
 
 
 def make_mock_process(
     pid,  # type: int
-    open_files=None,  # type: Optional[List]
+    open_files=None,  # type: t.Optional[t.List[str]]
     name="",  # type: str
     cmdline="",  # type: str
     create_time=0.0,  # type: float
@@ -45,7 +45,7 @@ def make_mock_process(
     """
     if open_files is None:
         open_files = []
-    cmd = str(cmdline).split()
+    cmd = cmdline.split()
     if len(cmd) > 1 and name == "":
         name = cmd[0]
     mock_process = create_autospec(psutil.Process)

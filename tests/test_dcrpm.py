@@ -101,7 +101,7 @@ class TestDcRPM(unittest.TestCase):
     # run_rebuild
     @patch("dcrpm.rpmutil.RPMUtil.rebuild_db")
     def test_run_rebuild_dry_run(self, mock_rebuild):
-        # type: (MagicMock, MagicMock) -> None
+        # type: (MagicMock) -> None
         self.args.dry_run = True
         self.dcrpm.run_rebuild()
         mock_rebuild.assert_not_called()
@@ -158,11 +158,13 @@ class TestDcRPM(unittest.TestCase):
     @patch("os.statvfs")
     def test_has_free_disk_space_success(self, mock_statvfs):
         # type: (MagicMock) -> None
-        mock_statvfs.return_value = statvfs_result(4096, 108710048)
+        mock_statvfs.return_value = statvfs_result(
+            4096, 108710048
+        )  # type: statvfs_result
         self.assertTrue(self.dcrpm.has_free_disk_space())
 
     @patch("os.statvfs")
     def test_has_free_disk_space_fail(self, mock_statvfs):
         # type: (MagicMock) -> None
-        mock_statvfs.return_value = statvfs_result(4096, 5)
+        mock_statvfs.return_value = statvfs_result(4096, 5)  # type: statvfs_result
         self.assertFalse(self.dcrpm.has_free_disk_space())

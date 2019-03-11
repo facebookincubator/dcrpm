@@ -12,17 +12,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import os
-
-import psutil
 import typing as t
 
-from .util import (
-    DcRPMException,
-    StatusCode,
-    TimeoutExpired,
-    run_with_timeout,
-    which,
-)
+import psutil
+
+from .util import DcRPMException, StatusCode, TimeoutExpired, run_with_timeout, which
+
 
 if t.TYPE_CHECKING:
     import enum

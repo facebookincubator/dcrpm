@@ -37,7 +37,9 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
         self.recover_path = which("db_recover")  # type: str
         self.verify_path = which("db_verify")  # type: str
         self.stat_path = which("db_stat")  # type: str
-        self.yum_complete_transaction_path = "/usr/sbin/yum-complete-transaction"  # type: str
+        self.yum_complete_transaction_path = (
+            "/usr/sbin/yum-complete-transaction"
+        )  # type: str
         self.blacklist = ["table1", "table2"]  # type: t.List[str]
         self.forensic = False  # type: bool
 

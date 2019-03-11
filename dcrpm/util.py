@@ -15,6 +15,8 @@ import os
 import signal
 import subprocess
 import typing as t
+
+
 if t.TYPE_CHECKING:
     from types import FrameType
 
@@ -248,6 +250,7 @@ def which(cmd):
     # type: (str) -> str
     try:
         import shutil
+
         path = shutil.which(cmd)
         if not path:
             raise DcRPMException("failed to find '{}'".format(cmd))

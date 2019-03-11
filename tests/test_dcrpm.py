@@ -51,12 +51,7 @@ class TestDcRPM(unittest.TestCase):
             blacklist=self.blacklist,
             forensic=False,
         )  # type: RPMUtil
-        self.rpmutil.tables = [
-            "table0",
-            "table1",
-            "table2",
-            "table3",
-        ]
+        self.rpmutil.tables = ["table0", "table1", "table2", "table3"]
 
         # Args
         self.args = argparse.Namespace(

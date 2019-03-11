@@ -8,10 +8,7 @@
 #
 # pyre-strict
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
 import json
@@ -25,13 +22,16 @@ from .dcrpm import DcRPM
 from .rpmutil import RPMUtil
 from .util import which
 
+
 # Some sensible defaults.
 DEFAULT_MAX_PASSES = 5  # type: int
 
 # Taken from the original C++ dcrpm
 DEFAULT_MIN_REQUIRED_FREE_SPACE = 150 * 1048576  # type: int
 
-LOG_FORMAT = "%(asctime)s %(levelname)s [%(module)s.%(funcName)s]: %(message)s"  # type: str
+LOG_FORMAT = (
+    "%(asctime)s %(levelname)s [%(module)s.%(funcName)s]: %(message)s"
+)  # type: str
 DEFAULT_LOGGING_CONFIG = {
     "version": 1,
     "formatters": {"standard": {"format": LOG_FORMAT}},

@@ -16,6 +16,7 @@ EOF
 root=$(git rev-parse --show-toplevel)
 
 "${VIRTUAL_ENV}/bin/pyre" \
+    --noninteractive \
     --source-directory "$root/dcrpm" \
     --source-directory "$root/tests" \
     --typeshed "${VIRTUAL_ENV}/lib/pyre_check/typeshed" \

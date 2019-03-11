@@ -252,7 +252,7 @@ def which(cmd):
         if not path:
             raise DcRPMException("failed to find '{}'".format(cmd))
         return path
-    except ImportError:
+    except AttributeError:
         for path in os.environ["PATH"].split(os.pathsep):
             p = os.path.join(path, cmd)
             if os.access(p, os.X_OK):

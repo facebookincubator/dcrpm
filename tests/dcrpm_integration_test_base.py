@@ -6,6 +6,7 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -14,6 +15,7 @@ import json
 import logging
 import logging.config
 import unittest
+import typing as t
 
 from dcrpm.dcrpm import DcRPM
 from dcrpm.rpmutil import RPMUtil
@@ -29,14 +31,17 @@ RPMDB.path = "tests/rpmdbs"
 
 class DcrpmIntegrationTestBase(unittest.TestCase):
     def setUp(self):
-        self.rpm_path = which("rpm")
-        self.dbpath = "/tmp/"
-        self.recover_path = which("db_recover")
-        self.verify_path = which("db_verify")
-        self.stat_path = which("db_stat")
-        self.yum_complete_transaction_path = "/usr/sbin/yum-complete-transaction"
-        self.blacklist = ["table1", "table2"]
-        self.forensic = False
+        # type: () -> None
+        self.rpm_path = which("rpm")  # type: str
+        self.dbpath = "/tmp/"  # type: str
+        self.recover_path = which("db_recover")  # type: str
+        self.verify_path = which("db_verify")  # type: str
+        self.stat_path = which("db_stat")  # type: str
+        self.yum_complete_transaction_path = (
+            "/usr/sbin/yum-complete-transaction"
+        )  # type: str
+        self.blacklist = ["table1", "table2"]  # type: t.List[str]
+        self.forensic = False  # type: bool
 
         # Args
         self.args = argparse.Namespace(
@@ -57,7 +62,7 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
             logging_config_file="/var/log/blah.log",
             blacklist=["table2", "table3"],
             forensic=False,
-        )
+        )  # type: argparse.Namespace
 
         self.rpmutil = RPMUtil(
             dbpath=self.dbpath,
@@ -68,12 +73,14 @@ class DcrpmIntegrationTestBase(unittest.TestCase):
             yum_complete_transaction_path=self.yum_complete_transaction_path,
             blacklist=self.blacklist,
             forensic=self.forensic,
-        )
+        )  # type: RPMUtil
 
         # DcRPM
-        self.dcrpm = DcRPM(self.rpmutil, self.args)
-        logging.getLogger("status").handlers[0].trace = []
+        self.dcrpm = DcRPM(self.rpmutil, self.args)  # type: DcRPM
+        logging.getLogger("status").handlers[0].trace = []  # type: t.List[str]
 
     # Helper for reading current logger trace
     def action_trace(self):
+        # type: () -> t.List[str]
+        # pyre-ignore[16]: 'trace' gets set dynamically at runtime.
         return logging.getLogger("status").handlers[0].trace

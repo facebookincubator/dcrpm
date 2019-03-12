@@ -6,6 +6,7 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -13,11 +14,19 @@ import logging
 import os
 import signal
 import subprocess
+import typing as t
 
 
-END_TIMEOUT = 5  # seconds
+if t.TYPE_CHECKING:
+    from types import FrameType
 
-_logger = logging.getLogger()
+
+END_TIMEOUT = 5  # type: int
+
+_logger = logging.getLogger()  # type: logging.Logger
+
+# Generic ReturnType
+RT = t.TypeVar("RT")
 
 
 class StatusCode:
@@ -25,8 +34,8 @@ class StatusCode:
     Command return codes codified
     """
 
-    SUCCESS = 0
-    SEGFAULT = -11
+    SUCCESS = 0  # type: int
+    SEGFAULT = -11  # type: int
 
 
 class DcRPMException(Exception):
@@ -67,7 +76,7 @@ class CompletedProcess:
     """
 
     def __init__(self, stdout="", stderr="", returncode=0):
-        # type: (str, str, int) -> None:
+        # type: (str, str, int) -> None
         self.stdout = stdout
         self.stderr = stderr
         self.returncode = returncode
@@ -79,14 +88,14 @@ class RepairAction:
     classifying failures in a more programmatic fashion.
     """
 
-    NO_ACTION = 0
-    DB_RECOVERY = 1
-    TABLE_REBUILD = 2
-    KILL_LOCK_PIDS = 3
-    STUCK_YUM = 4
-    CLEAN_YUM_TRANSACTIONS = 5
-    INDEX_REBUILD = 6
-    KILL_DB001_PIDS = 7
+    NO_ACTION = 0  # type: int
+    DB_RECOVERY = 1  # type: int
+    TABLE_REBUILD = 2  # type: int
+    KILL_LOCK_PIDS = 3  # type: int
+    STUCK_YUM = 4  # type: int
+    CLEAN_YUM_TRANSACTIONS = 5  # type: int
+    INDEX_REBUILD = 6  # type: int
+    KILL_DB001_PIDS = 7  # type: int
 
 
 class Result:
@@ -94,8 +103,8 @@ class Result:
     Enum representing whole program status.
     """
 
-    OK = 0
-    FAILED = 1
+    OK = 0  # type: int
+    FAILED = 1  # type: int
 
 
 # Human readable names for different cleanup actions.
@@ -108,13 +117,16 @@ ACTION_NAMES = {
     RepairAction.STUCK_YUM: "stuck_yum",
     RepairAction.CLEAN_YUM_TRANSACTIONS: "cleanup_yum_transactions",
     RepairAction.INDEX_REBUILD: "index_rebuild",
-}
+}  # type: t.Dict[int, str]
 
 
 def memoize(f):
-    cache = {}
+    # type: (t.Callable[..., RT]) -> t.Callable[..., RT]
+    cache = {}  # type: t.Dict[str, RT]
 
+    # pyre-ignore[2]: *args and **kwargs
     def wrapper(*args, **kwargs):
+        # type: (t.Any, t.Any) -> RT
         key = str(args) + str(kwargs)
         if key not in cache:
             cache[key] = f(*args, **kwargs)
@@ -124,15 +136,21 @@ def memoize(f):
 
 
 def alarm_handler(signum, frame):
-    # type: (int, Any) -> None
+    # type: (int, FrameType) -> None
     """
     Alarm handler to pass to signal.signal for subprocess timeout.
     """
     raise TimeoutExpired()
 
 
-def call_with_timeout(func, timeout, raise_=True, args=None, kwargs=None):
-    # type: (Callable, int, bool, List[Any], Dict[str, Any]) -> Optional[Any]
+def call_with_timeout(
+    func,  # type: t.Callable[..., RT]
+    timeout,  # type: int
+    args=None,  # type: t.Optional[t.Iterable[str]]
+    # pyre-ignore[2]: kwargs has type dict[str, Any]
+    kwargs=None,  # type: t.Optional[t.Dict[str, t.Any]]
+):
+    # type: (...) -> RT
     """
     A generic method that calls some callable and uses SIGALRM to time out the
     call should it take longer than `timeout`.
@@ -152,20 +170,21 @@ def call_with_timeout(func, timeout, raise_=True, args=None, kwargs=None):
     # from: https://stackoverflow.com/a/1191537
     signal.signal(signal.SIGALRM, alarm_handler)
     signal.alarm(timeout)
-    output = None
     try:
-        output = func(*args, **kwargs)
-    except TimeoutExpired:
-        if raise_:
-            raise
+        return func(*args, **kwargs)
     finally:
         signal.alarm(0)
 
-    return output
+    raise DcRPMException("should not get here")
 
 
-def run_with_timeout(cmd, timeout, raise_on_nonzero=True, raise_on_timeout=True):
-    # type: (str, int, bool) -> CompletedProcess
+def run_with_timeout(
+    cmd,  # type: str
+    timeout,  # type: int
+    raise_on_nonzero=True,  # type: bool
+    raise_on_timeout=True,  # type: bool
+):
+    # type: (...) -> CompletedProcess
     """
     Runs command `cmd` with timeout `timeout`. If `raise_on_nonzero` is True,
     raises a DcRPMException if `cmd` exits with a nonzero status. If
@@ -192,7 +211,7 @@ def run_with_timeout(cmd, timeout, raise_on_nonzero=True, raise_on_timeout=True)
         if raise_on_timeout:
             raise DcRPMException(msg)
         else:
-            return CompletedProcess(returncode=rc, stdout=None, stderr=None)
+            return CompletedProcess(returncode=rc, stdout="", stderr="")
 
     # Now get returncode.
     rc = proc.poll()
@@ -205,11 +224,12 @@ def run_with_timeout(cmd, timeout, raise_on_nonzero=True, raise_on_timeout=True)
 
 
 def kindly_end(proc, timeout=END_TIMEOUT):
-    # type: (Popen, int) -> None
+    # type: (subprocess.Popen, int) -> int
     """
     Tries to nicely end process `proc`, first by sending SIGTERM and then, if it
     is still running, SIGKILL.
     """
+    rc = 1  # type: t.Optional[int]
     try:
         _logger.info("Sending SIGTERM to %d", proc.pid)
         proc.terminate()
@@ -222,17 +242,23 @@ def kindly_end(proc, timeout=END_TIMEOUT):
         except TimeoutExpired:
             _logger.error("Could not SIGKILL %d, good luck", proc.pid)
 
-    return rc
+    return rc if rc else 1
 
 
 @memoize
 def which(cmd):
+    # type: (str) -> str
     try:
-        from shutil import which
+        import shutil
 
-        return which(cmd)
-    except ImportError:
+        path = shutil.which(cmd)
+        if not path:
+            raise DcRPMException("failed to find '{}'".format(cmd))
+        return path
+    except AttributeError:
         for path in os.environ["PATH"].split(os.pathsep):
             p = os.path.join(path, cmd)
             if os.access(p, os.X_OK):
                 return p
+
+    raise DcRPMException("could not find '{}' in $PATH".format(cmd))

@@ -60,3 +60,6 @@ pip-delete-this-directory.txt
 
 # pyenv
 .python-version
+
+# typechecking
+.pyre/

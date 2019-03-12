@@ -6,6 +6,7 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 #
+# pyre-strict
 
 """
 This is the version file, modify __version__ to update new versions,
@@ -18,6 +19,6 @@ from __future__ import unicode_literals
 
 import sys
 
-__version__ = "0.4.0"
+__version__ = "0.4.0"  # type: str
 
 sys.modules[__name__] = __version__

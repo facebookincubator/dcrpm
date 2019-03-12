@@ -20,14 +20,15 @@ from dcrpm.util import CompletedProcess, DBNeedsRebuild, DBNeedsRecovery, DcRPME
 from tests.mock_process import make_mock_process
 
 
-try:
-    from unittest.mock import Mock
-except ImportError:
-    from mock import Mock
+if t.TYPE_CHECKING:
+    try:
+        from unittest.mock import Mock
+    except ImportError:
+        from mock import Mock
 
 
 def assert_called_like(mock, **kwargs):
-    # type: (Mock, **bool) -> None
+    # type: (Mock, bool) -> None
     """
     Helper function to assert that `mock` was called with the calls listed in
     `call_mapping`, which looks like:

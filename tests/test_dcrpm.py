@@ -11,13 +11,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
+import os
 import typing as t
-import unittest
 from os.path import join
 
-from dcrpm.dcrpm import DcRPM
-from dcrpm.rpmutil import RPMUtil
-from dcrpm.util import DcRPMException
+import testslide
+from dcrpm import dcrpm, pidutil, rpmutil, util
 
 
 try:
@@ -32,6 +31,7 @@ statvfs_result = t.NamedTuple("statvfs_result", [("f_bsize", int), ("f_bfree", i
 class TestDcRPM(testslide.TestCase):
     def setUp(self):
         # type: () -> None
+        super(TestDcRPM, self).setUp()
         self.rpm_path = "/usr/bin/rpm"  # type: str
         self.dbpath = "/var/lib/rpm"  # type: str
         self.recover_path = "/usr/bin/db_recover"  # type: str
@@ -41,7 +41,7 @@ class TestDcRPM(testslide.TestCase):
             "/usr/bin/yum-complete-transaction"
         )  # type: str
         self.blacklist = ["table1", "table2"]  # type: t.List[str]
-        self.rpmutil = RPMUtil(
+        self.rpmutil = rpmutil.RPMUtil(
             dbpath=self.dbpath,
             rpm_path=self.rpm_path,
             recover_path=self.recover_path,
@@ -50,7 +50,7 @@ class TestDcRPM(testslide.TestCase):
             yum_complete_transaction_path=self.yum_complete_transaction_path,
             blacklist=self.blacklist,
             forensic=False,
-        )  # type: RPMUtil
+        )  # type: rpmutil.RPMUtil
         self.rpmutil.tables = ["table0", "table1", "table2", "table3"]
 
         # Args
@@ -75,7 +75,7 @@ class TestDcRPM(testslide.TestCase):
         )  # type: argparse.Namespace
 
         # DcRPM
-        self.dcrpm = DcRPM(self.rpmutil, self.args)  # type: DcRPM
+        self.dcrpm = dcrpm.DcRPM(self.rpmutil, self.args)  # type: dcrpm.DcRPM
 
     # run_recovery
     def test_run_recovery_dry_run(self):

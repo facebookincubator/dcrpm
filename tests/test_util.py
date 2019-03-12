@@ -82,11 +82,6 @@ class TestUtil(testslide.TestCase):
         with self.assertRaises(TimeoutExpired):
             call_with_timeout(time.sleep, 1, args=[2])
 
-    def test_call_with_timeout_real_no_raises_returns_none(self):
-        # type: () -> None
-        result = call_with_timeout(time.sleep, 1, raise_=False, args=[2])
-        self.assertIsNone(result)
-
     # run_with_timeout
     def test_run_with_timeout_success(self):
         # type: () -> None

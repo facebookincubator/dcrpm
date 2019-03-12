@@ -19,8 +19,9 @@ from tests.mock_process import make_mock_process
 
 class TestYum(testslide.TestCase):
     def setUp(self):
+        # type: () -> None
         super(TestYum, self).setUp()
-        self.yum = yum.Yum()
+        self.yum = yum.Yum()  # type: yum.Yum
 
     # check_stuck
     def test_check_stuck_filenotfound(self):

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 #
 # Copyright (c) 2019-present, Facebook, Inc.
 # All rights reserved.
@@ -6,12 +6,13 @@
 # This source code is licensed under the GPLv2 license found in the LICENSE
 # file in the root directory of this source tree.
 
-set -eu
-set -o pipefail
+set -e
 
-[[ -z "${VIRTUAL_ENV}" ]] && echo "not in a virtualenv, exiting" && exit 1
+[ -z "${VIRTUAL_ENV}" ] && echo "not in a virtualenv, exiting" && exit 1
 
-function get_site_packages() {
+set -u
+
+get_site_packages() {
     python - <<EOF
 from __future__ import print_function
 from distutils.sysconfig import get_python_lib

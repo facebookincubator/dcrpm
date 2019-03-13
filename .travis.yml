@@ -54,6 +54,7 @@ before_install: |
     pyenv install "$PYTHON_VERSION"
     eval "$(pyenv init -)"
     pyenv global "$PYTHON_VERSION"
+    pip install -r requirements.txt
 
     # setup rpm
     brew install rpm

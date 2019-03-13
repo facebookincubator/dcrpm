@@ -1,3 +1,4 @@
 mock; python_version < '3.6'
 psutil
 typing; python_version < '3.6'
+TestSlide

@@ -10,74 +10,78 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import signal
 import sys
 import typing as t
-import unittest
-from collections import namedtuple
 
+import testslide
 from dcrpm import pidutil
 from dcrpm.util import CompletedProcess, DcRPMException
 from tests.mock_process import make_mock_process
 
+
 if t.TYPE_CHECKING:
     import psutil
 
-
 try:
-    from unittest.mock import mock_open, patch
+    from unittest.mock import mock_open
 except ImportError:
-    from mock import mock_open, patch
+    from mock import mock_open
 
 
-BASE = __name__ + ".pidutil"  # type: str
-run_str = BASE + ".run_with_timeout"  # type: str
+if sys.version_info[0] == 2:
+    builtins = "__builtin__"
+else:
+    import builtins
+
 
 stat_result = t.NamedTuple("stat_result", [("st_mtime", int)])
 
-if sys.version_info[0] == 2:
-    # Python 2
-    builtin_open = "__builtin__.open"  # type: str
-else:
-    # Python 3
-    import builtins
 
-    builtin_open = "builtins.open"  # type: str
-
-
-class TestPidutil(unittest.TestCase):
+class TestPidutil(testslide.TestCase):
     # procs_holding_file
     def test_procs_holding_file_no_lsof(self):
         # type: () -> None
-        with patch("dcrpm.pidutil.which", return_value=None):
-            with self.assertRaises(DcRPMException):
-                pidutil.procs_holding_file("/tmp/foo")
+        (
+            self.mock_callable(pidutil, "which")
+            .to_return_value(None)
+            .and_assert_called_once()
+        )
+        with self.assertRaises(DcRPMException):
+            pidutil.procs_holding_file("/tmp/foo")
 
     # _pids_holding_file
     def test__pids_holding_file_timeout(self):
         # type: () -> None
-        with patch(run_str, side_effect=DcRPMException()):
-            self.assertEqual(
-                set(), pidutil._pids_holding_file("/path/to/lsof", "/tmp/foo")
-            )
+        (
+            self.mock_callable(pidutil, "run_with_timeout")
+            .to_raise(DcRPMException())
+            .and_assert_called_once
+        )
+        self.assertFalse(pidutil._pids_holding_file("/path/to/lsof", "/tmp/foo"))
 
     def test__pids_holding_file_failed(self):
         # type: () -> None
-        with patch(
-            run_str, return_value=CompletedProcess(returncode=1, stderr="oh no")
-        ):
-            self.assertEqual(
-                set(), pidutil._pids_holding_file("/path/to/lsof", "/tmp/foo")
-            )
+        (
+            self.mock_callable(pidutil, "run_with_timeout")
+            .to_return_value(CompletedProcess(returncode=1, stderr="oh no"))
+            .and_assert_called_once
+        )
+        self.assertFalse(pidutil._pids_holding_file("/path/to/lsof", "/tmp/foo"))
 
     def test__pids_holding_file_success(self):
         # type: () -> None
-        lsof_stdout = "\n".join(["p12345", "f1", "p123456", "f1"])
-        with patch(run_str, return_value=CompletedProcess(stdout=lsof_stdout)):
-            self.assertEqual(
-                set([12345, 123456]),
-                pidutil._pids_holding_file("/path/to/lsof", "/tmp/a"),
+        (
+            self.mock_callable(pidutil, "run_with_timeout")
+            .to_return_value(
+                CompletedProcess(stdout="\n".join(["p12345", "f1", "p123456", "f1"]))
             )
+            .and_assert_called_once
+        )
+        self.assertEqual(
+            set([12345, 123456]), pidutil._pids_holding_file("/path/to/lsof", "/tmp/a")
+        )
 
     # send_signal
     def test_send_signal_success(self):
@@ -135,28 +139,61 @@ class TestPidutil(unittest.TestCase):
         ]  # type: t.List[psutil.Process]
         self.assertFalse(pidutil.send_signals(procs, signal.SIGKILL))
 
-    # pidfile_info
+
+class TestPidfileInfo(testslide.TestCase):
+    def setUp(self):
+        # type: () -> None
+        super(TestPidfileInfo, self).setUp()
+        self.mock_callable(builtins, "open").to_call_original()
+        self.mock_callable(os, "stat").to_call_original()
+
     def test_pidfile_info_sucess(self):
         # type: () -> None
-        with patch(builtin_open, mock_open(read_data="12345")) as mock_o, patch(
-            "os.stat", return_value=stat_result(12345678)
-        ):
-            pid, _ = pidutil.pidfile_info("/some/path")
+        (
+            self.mock_callable(builtins, "open")
+            .for_call("/some/path")
+            .with_implementation(mock_open(read_data="12345"))
+            .and_assert_called_once()
+        )
+        (
+            self.mock_callable(os, "stat")
+            .for_call("/some/path")
+            .to_return_value(stat_result(12345678))
+            .and_assert_called_once()
+        )
+        pid, _ = pidutil.pidfile_info("/some/path")
         self.assertEqual(pid, 12345)
-        mock_o.assert_called_once_with("/some/path")
 
     def test_pidfile_info_bad_pid(self):
         # type: () -> None
-        with patch(builtin_open, mock_open(read_data="-1")), patch(
-            "os.stat", return_value=stat_result(12345678)
-        ):
-            with self.assertRaises(ValueError):
-                pid, _ = pidutil.pidfile_info("/something")
+        (
+            self.mock_callable(builtins, "open")
+            .for_call("/something")
+            .with_implementation(mock_open(read_data="-1"))
+            .and_assert_called_once()
+        )
+        (
+            self.mock_callable(os, "stat")
+            .for_call("/something")
+            .to_return_value(stat_result(12345678))
+            .and_assert_not_called()
+        )
+        with self.assertRaises(ValueError):
+            pid, _ = pidutil.pidfile_info("/something")
 
     def test_pidfile_info_invalid_pid(self):
         # type: () -> None
-        with patch(builtin_open, mock_open(read_data="ooglybogly")), patch(
-            "os.stat", return_value=stat_result(12345678)
-        ):
-            with self.assertRaises(ValueError):
-                pid, _ = pidutil.pidfile_info("/something")
+        (
+            self.mock_callable(builtins, "open")
+            .for_call("/something")
+            .with_implementation(mock_open(read_data="ooglybogly"))
+            .and_assert_called_once()
+        )
+        (
+            self.mock_callable(os, "stat")
+            .for_call("/something")
+            .to_return_value(stat_result(12345678))
+            .and_assert_not_called()
+        )
+        with self.assertRaises(ValueError):
+            pid, _ = pidutil.pidfile_info("/something")

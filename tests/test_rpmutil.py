@@ -10,6 +10,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import platform
 import time
 import typing as t  # noqa
 
@@ -123,7 +124,7 @@ class TestRPMUtil(testslide.TestCase):
         ).and_assert_called_once()
         self.rpmutil.check_rpm_qa()
 
-    def test_check_rpm_qa_not_enough_packages(self):
+    def test_check_rpm_qa_not_enough_packages_linux(self):
         # type: () -> None
         (
             self.mock_callable(rpmutil, "run_with_timeout")
@@ -132,8 +133,33 @@ class TestRPMUtil(testslide.TestCase):
             )
             .and_assert_called_once()
         )
+        (
+            self.mock_callable(platform, "system")
+            .to_return_value("Linux")
+            .and_assert_called_once()
+        )
         with self.assertRaises(DBNeedsRecovery):
             self.rpmutil.check_rpm_qa()
+
+    def test_check_rpm_qa_not_enough_packages_darwin(self):
+        # type: () -> None
+        (
+            self.mock_callable(rpmutil, "run_with_timeout")
+            .to_return_value(
+                CompletedProcess(stdout="\n".join(["rpm%s" % i for i in range(5)]))
+            )
+            .and_assert_called_once()
+        )
+        (
+            self.mock_callable(platform, "system")
+            .to_return_value("Darwin")
+            .and_assert_called_once()
+        )
+        try:
+            self.rpmutil.check_rpm_qa()
+        except DBNeedsRecovery:
+            self.fail("Package count check should be bypassed on macOS")
+
 
     def test_check_rpm_qa_raise_on_nonzero_rc(self):
         # type: () -> None

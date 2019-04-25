@@ -116,6 +116,15 @@ class RPMUtil:
                 raise DBIndexNeedsRebuild
 
     @memoize
+    def _read_os_name(self):
+        # type: () -> str
+        """
+        Call platform.system() and caches the value
+        """
+        import platform
+        return platform.system()
+
+    @memoize
     def _read_os_release(self):
         # type: () -> t.Dict[str, str]
         """
@@ -310,13 +319,17 @@ class RPMUtil:
             raise DBNeedsRecovery()
 
         packages = result.stdout.strip().split()
-        if len(packages) < MIN_ACCEPTABLE_PKG_COUNT:
-            self.logger.error(
-                "rpm package count seems too low; saw %d, expected at least %d",
-                len(packages),
-                MIN_ACCEPTABLE_PKG_COUNT,
-            )
-            raise DBNeedsRecovery()
+        # This test only makes sense on Linux; on macOS RPM is not the native
+        # package manager, so a freshly-installed system can have
+        # very few RPMs
+        if self._read_os_name() == "Linux":
+            if len(packages) < MIN_ACCEPTABLE_PKG_COUNT:
+                self.logger.error(
+                    "rpm package count seems too low; saw %d, expected at least %d",
+                    len(packages),
+                    MIN_ACCEPTABLE_PKG_COUNT,
+                )
+                raise DBNeedsRecovery()
 
         self.logger.debug("Package count: %d", len(packages))
 

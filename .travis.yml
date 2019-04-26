@@ -42,7 +42,7 @@ matrix:
       script: black --check .
     - name: "Pyre typechecking"
       python: 3.6
-      install: pip install -r requirements.txt pyre-check
+      install: pip install -r requirements.txt pyre-check==0.0.20
       script: scripts/run_pyre_venv.sh
 
 before_install: |

@@ -16,7 +16,7 @@ import typing as t  # noqa
 
 import psutil
 import testslide
-from dcrpm import rpmutil
+from dcrpm import rpmutil, util
 from dcrpm.util import CompletedProcess, DBNeedsRebuild, DBNeedsRecovery, DcRPMException
 from tests.mock_process import make_mock_process
 
@@ -164,7 +164,7 @@ class TestRPMUtil(testslide.TestCase):
         # type: () -> None
         (
             self.mock_callable(rpmutil, "run_with_timeout")
-            .to_return_value(CompletedProcess(returncode=1))
+            .to_raise(DcRPMException)
             .and_assert_called_once()
         )
         with self.assertRaises(DBNeedsRecovery):

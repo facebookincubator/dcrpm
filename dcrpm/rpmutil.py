@@ -122,6 +122,7 @@ class RPMUtil:
         Call platform.system() and caches the value
         """
         import platform
+
         return platform.system()
 
     @memoize

@@ -160,7 +160,6 @@ class TestRPMUtil(testslide.TestCase):
         except DBNeedsRecovery:
             self.fail("Package count check should be bypassed on macOS")
 
-
     def test_check_rpm_qa_raise_on_nonzero_rc(self):
         # type: () -> None
         (

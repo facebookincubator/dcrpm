@@ -172,12 +172,7 @@ class TestPidfileInfo(testslide.TestCase):
             .with_implementation(mock_open(read_data="-1"))
             .and_assert_called_once()
         )
-        (
-            self.mock_callable(os, "stat")
-            .for_call("/something")
-            .to_return_value(stat_result(12345678))
-            .and_assert_not_called()
-        )
+        self.mock_callable(os, "stat").and_assert_not_called()
         with self.assertRaises(ValueError):
             pid, _ = pidutil.pidfile_info("/something")
 
@@ -189,11 +184,6 @@ class TestPidfileInfo(testslide.TestCase):
             .with_implementation(mock_open(read_data="ooglybogly"))
             .and_assert_called_once()
         )
-        (
-            self.mock_callable(os, "stat")
-            .for_call("/something")
-            .to_return_value(stat_result(12345678))
-            .and_assert_not_called()
-        )
+        self.mock_callable(os, "stat").and_assert_not_called()
         with self.assertRaises(ValueError):
             pid, _ = pidutil.pidfile_info("/something")

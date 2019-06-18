@@ -80,27 +80,15 @@ class TestDcRPM(testslide.TestCase):
     # run_recovery
     def test_run_recovery_dry_run(self):
         # type: () -> None
-        (
-            self.mock_callable(pidutil, "send_signals")
-            .to_return_value(None)
-            .and_assert_not_called()
-        )
-        (
-            self.mock_callable(self.rpmutil, "recover_db")
-            .to_return_value(None)
-            .and_assert_not_called()
-        )
+        self.mock_callable(pidutil, "send_signals").and_assert_not_called()
+        self.mock_callable(self.rpmutil, "recover_db").and_assert_not_called()
         self.args.dry_run = True
         self.dcrpm.run_recovery()
 
     # db_stat
     def test_db_stat_forensic(self):
         # type: () -> None
-        (
-            self.mock_callable(pidutil, "send_signals")
-            .to_return_value(None)
-            .and_assert_not_called()
-        )
+        self.mock_callable(pidutil, "send_signals").and_assert_not_called()
         (
             self.mock_callable(self.rpmutil, "db_stat")
             .to_return_value(None)
@@ -113,11 +101,7 @@ class TestDcRPM(testslide.TestCase):
     # run_rebuild
     def test_run_rebuild_dry_run(self):
         # type: () -> None
-        (
-            self.mock_callable(self.rpmutil, "rebuild_db")
-            .to_return_value(None)
-            .and_assert_not_called()
-        )
+        self.mock_callable(self.rpmutil, "rebuild_db").and_assert_not_called()
         self.args.dry_run = True
         self.dcrpm.run_rebuild()
 

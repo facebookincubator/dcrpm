@@ -228,11 +228,7 @@ class TestRPMUtil(testslide.TestCase):
 
     def test_verify_tables_all_blacklisted(self):
         # type: () -> None
-        (
-            self.mock_callable(rpmutil, "run_with_timeout")
-            .to_return_value(None)
-            .and_assert_not_called()
-        )
+        self.mock_callable(rpmutil, "run_with_timeout").and_assert_not_called()
         self.rpmutil.tables = self.rpmutil.tables[1:3]
         self.rpmutil.verify_tables()
 

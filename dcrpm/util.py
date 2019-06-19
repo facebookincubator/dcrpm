@@ -183,7 +183,7 @@ def run_with_timeout(
     timeout,  # type: int
     raise_on_nonzero=True,  # type: bool
     raise_on_timeout=True,  # type: bool
-    exception_to_raise=DcRPMException,  # type: Exception
+    exception_to_raise=DcRPMException,  # type: t.Type[Exception]
 ):
     # type: (...) -> CompletedProcess
     """

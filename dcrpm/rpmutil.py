@@ -109,7 +109,7 @@ class RPMUtil:
             self.logger.error("db_stat -CA failed")
 
     def _poke_index(self, cmd, checks):
-        # type: (str, t.Iterable[Check]) -> None
+        # type: (t.Sequence[str], t.Iterable[Check]) -> None
         """
         Run cmd, and ensure all checks are True. Raise DBIndexNeedsRebuild otherwise
         """
@@ -170,7 +170,7 @@ class RPMUtil:
                 ],
             },
             "Conflictname": {
-                "comd": [
+                "cmd": [
                     self.rpm_path,
                     "-q",
                     "--conflics",
@@ -282,7 +282,7 @@ class RPMUtil:
                         lambda proc: len(proc.stdout.splitlines()) >= 1,
                     ],
                 },
-            }  # type: t.Dict[str, t.Dict[str, t.Union[str, t.Iterable[Check]]]]
+            }  # type: t.Dict[str, t.Dict[str, t.Union[t.Iterable[str], t.Iterable[Check]]]]
             rpmdb_indexes.update(d)
 
         # Checks for Packages db corruption

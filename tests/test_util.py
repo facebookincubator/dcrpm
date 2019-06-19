@@ -88,8 +88,7 @@ class TestUtil(testslide.TestCase):
         (
             self.mock_callable(subprocess, "Popen")
             .for_call(
-                "/bin/true",
-                shell=True,
+                ["/bin/true"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
@@ -97,7 +96,7 @@ class TestUtil(testslide.TestCase):
             .to_return_value(make_mock_popen())
             .and_assert_called_once()
         )
-        result = run_with_timeout("/bin/true", 5)
+        result = run_with_timeout(["/bin/true"], 5)
         self.assertEqual(result.returncode, 0)
 
     def test_run_with_timeout_timeout(self):
@@ -106,8 +105,7 @@ class TestUtil(testslide.TestCase):
         (
             self.mock_callable(subprocess, "Popen")
             .for_call(
-                "/bin/true",
-                shell=True,
+                ["/bin/true"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
@@ -116,7 +114,7 @@ class TestUtil(testslide.TestCase):
             .and_assert_called_once()
         )
         with self.assertRaises(DcRPMException):
-            run_with_timeout("/bin/true", 5)
+            run_with_timeout(["/bin/true"], 5)
         mock_popen.kill.assert_not_called()
 
     def test_run_with_timeout_terminates_on_timeout(self):
@@ -125,8 +123,7 @@ class TestUtil(testslide.TestCase):
         (
             self.mock_callable(subprocess, "Popen")
             .for_call(
-                "/bin/true",
-                shell=True,
+                ["/bin/true"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
@@ -135,7 +132,7 @@ class TestUtil(testslide.TestCase):
             .and_assert_called_once()
         )
         with self.assertRaises(DcRPMException):
-            run_with_timeout("/bin/true", 5)
+            run_with_timeout(["/bin/true"], 5)
         mock_popen.terminate.assert_called()
         mock_popen.kill.assert_not_called()
 
@@ -145,8 +142,7 @@ class TestUtil(testslide.TestCase):
         (
             self.mock_callable(subprocess, "Popen")
             .for_call(
-                "/bin/true",
-                shell=True,
+                ["/bin/true"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
@@ -155,7 +151,7 @@ class TestUtil(testslide.TestCase):
             .and_assert_called_once()
         )
         with self.assertRaises(DcRPMException):
-            run_with_timeout("/bin/true", 5)
+            run_with_timeout(["/bin/true"], 5)
         mock_popen.terminate.assert_called()
         mock_popen.kill.assert_called()
 
@@ -164,8 +160,7 @@ class TestUtil(testslide.TestCase):
         (
             self.mock_callable(subprocess, "Popen")
             .for_call(
-                "/bin/true",
-                shell=True,
+                ["/bin/true"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
@@ -174,15 +169,14 @@ class TestUtil(testslide.TestCase):
             .and_assert_called_once()
         )
         with self.assertRaises(DcRPMException):
-            run_with_timeout("/bin/true", 5)
+            run_with_timeout(["/bin/true"], 5)
 
     def test_run_with_timeout_no_raise_on_nonzero(self):
         # type: () -> None
         (
             self.mock_callable(subprocess, "Popen")
             .for_call(
-                "/bin/true",
-                shell=True,
+                ["/bin/true"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
@@ -190,7 +184,7 @@ class TestUtil(testslide.TestCase):
             .to_return_value(make_mock_popen(returncode=1))
             .and_assert_called_once()
         )
-        result = run_with_timeout("/bin/true", 5, raise_on_nonzero=False)
+        result = run_with_timeout(["/bin/true"], 5, raise_on_nonzero=False)
         self.assertEqual(result.returncode, 1)
 
     def test_run_with_timeout_no_raise_on_timeout(self):
@@ -199,8 +193,7 @@ class TestUtil(testslide.TestCase):
         (
             self.mock_callable(subprocess, "Popen")
             .for_call(
-                "/bin/true",
-                shell=True,
+                ["/bin/true"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
@@ -208,7 +201,7 @@ class TestUtil(testslide.TestCase):
             .to_return_value(mock_popen)
             .and_assert_called_once()
         )
-        result = run_with_timeout("/bin/true", 5, raise_on_timeout=False)
+        result = run_with_timeout(["/bin/true"], 5, raise_on_timeout=False)
         self.assertNotEqual(result.returncode, 1)
         self.assertEqual(result.stdout, "")
         self.assertEqual(result.stderr, "")

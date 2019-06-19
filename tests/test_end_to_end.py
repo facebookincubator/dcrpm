@@ -7,7 +7,6 @@
 # file in the root directory of this source tree.
 #
 # pyre-strict
-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from tests.dcrpm_integration_test_base import DcrpmIntegrationTestBase

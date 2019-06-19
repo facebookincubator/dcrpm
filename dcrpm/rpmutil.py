@@ -93,8 +93,11 @@ class RPMUtil:
         environment.
         """
         try:
-            cmd = "{} -CA -h {}".format(self.stat_path, self.dbpath)
-            ds = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False)
+            ds = run_with_timeout(
+                [self.stat_path, "-CA", "-h", self.dbpath],
+                RPM_CHECK_TIMEOUT_SEC,
+                raise_on_nonzero=False,
+            )
             if ds.returncode > 0:
                 # Sometimes db_stat can fail, let's try to preserve that
                 debug = ds.stderr
@@ -159,9 +162,7 @@ class RPMUtil:
 
         rpmdb_indexes = {
             "Basenames": {
-                "cmd": "{} -qf {} --dbpath {}".format(
-                    self.rpm_path, self.rpm_path, self.dbpath
-                ),
+                "cmd": [self.rpm_path, "-qf", self.rpm_path, "--dbpath", self.dbpath],
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) == 1,
@@ -169,27 +170,42 @@ class RPMUtil:
                 ],
             },
             "Conflictname": {
-                "cmd": "{} -q --conflicts initscripts --dbpath {}".format(
-                    self.rpm_path, self.dbpath
-                ),
+                "comd": [
+                    self.rpm_path,
+                    "-q",
+                    "--conflics",
+                    "initscripts",
+                    "--dbpath",
+                    self.dbpath,
+                ],
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) > 3,
                 ],
             },
             "Obsoletename": {
-                "cmd": "{} -q --obsoletes coreutils --dbpath {}".format(
-                    self.rpm_path, self.dbpath
-                ),
+                "cmd": [
+                    self.rpm_path,
+                    "-q",
+                    "--obsoletes",
+                    "coreutils",
+                    "--dbpath",
+                    self.dbpath,
+                ],
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) > 2,
                 ],
             },
             "Providename": {
-                "cmd": "{} -q --whatprovides rpm --dbpath {}".format(
-                    self.rpm_path, self.dbpath
-                ),
+                "cmd": [
+                    self.rpm_path,
+                    "-q",
+                    "--whatprovides",
+                    "rpm",
+                    "--dbpath",
+                    self.dbpath,
+                ],
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) == 1,
@@ -197,9 +213,14 @@ class RPMUtil:
                 ],
             },
             "Requirename": {
-                "cmd": "{} -q --whatrequires rpm --dbpath {}".format(
-                    self.rpm_path, self.dbpath
-                ),
+                "cmd": [
+                    self.rpm_path,
+                    "-q",
+                    "--whatrequires",
+                    "rpm",
+                    "--dbpath",
+                    self.dbpath,
+                ],
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) >= 1,
@@ -234,18 +255,28 @@ class RPMUtil:
             #   itself.
             d = {
                 "Conflictname": {
-                    "cmd": "{} -q --conflicts systemd --dbpath {}".format(
-                        self.rpm_path, self.dbpath
-                    ),
+                    "cmd": [
+                        self.rpm_path,
+                        "-q",
+                        "--conflicts",
+                        "systemd",
+                        "--dbpath",
+                        self.dbpath,
+                    ],
                     "checks": [
                         lambda proc: proc.returncode != StatusCode.SEGFAULT,
                         lambda proc: len(proc.stdout.splitlines()) >= 2,
                     ],
                 },
                 "Obsoletename": {
-                    "cmd": "{} -q --obsoletes coreutils --dbpath {}".format(
-                        self.rpm_path, self.dbpath
-                    ),
+                    "cmd": [
+                        self.rpm_path,
+                        "-q",
+                        "--obsoletes",
+                        "coreutils",
+                        "--dbpath",
+                        self.dbpath,
+                    ],
                     "checks": [
                         lambda proc: proc.returncode != StatusCode.SEGFAULT,
                         lambda proc: len(proc.stdout.splitlines()) >= 1,
@@ -277,9 +308,7 @@ class RPMUtil:
                     continue
 
                 self.logger.info("Attempting to selectively poke at %s index", index)
-                self._poke_index(
-                    str(config["cmd"]), t.cast(t.List[Check], config["checks"])
-                )
+                self._poke_index(config["cmd"], t.cast(t.List[Check], config["checks"]))
 
             except DBIndexNeedsRebuild:
                 self.status_logger.info(RepairAction.INDEX_REBUILD)
@@ -292,7 +321,7 @@ class RPMUtil:
 
                 # Run the same command again, which should trigger a rebuild
                 proc = run_with_timeout(
-                    str(config["cmd"]), RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
+                    config["cmd"], RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
                 )
 
                 # Sometimes single index rebuilds don't work, as rpm fails to
@@ -312,8 +341,9 @@ class RPMUtil:
         Runs `rpm -qa` which serves as a good proxy check for whether bdb needs recovery
         """
         try:
-            cmd = "{} --dbpath {} -qa".format(self.rpm_path, self.dbpath)
-            result = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC)
+            result = run_with_timeout(
+                [self.rpm_path, "--dbpath", self.dbpath, "-qa"], RPM_CHECK_TIMEOUT_SEC
+            )
         except DcRPMException:
             self.logger.error("rpm -qa failed")
             self.status_logger.warning("initial_db_check_fail")
@@ -341,8 +371,10 @@ class RPMUtil:
         results (like 'perl' >.>)
         """
         try:
-            cmd = "{} --dbpath {} -q {}".format(self.rpm_path, self.dbpath, rpm_name)
-            result = run_with_timeout(cmd, RPM_CHECK_TIMEOUT_SEC)
+            result = run_with_timeout(
+                [self.rpm_path, "--dbpath", self.dbpath, "-q", rpm_name],
+                RPM_CHECK_TIMEOUT_SEC,
+            )
             stdout = result.stdout.strip().split()
             if not len(stdout) == 1 or not stdout[0].startswith("{}-".format(rpm_name)):
                 raise DBNeedsRebuild()
@@ -357,9 +389,11 @@ class RPMUtil:
         """
         Runs `db_recover`.
         """
-        cmd = "{} -h {}".format(self.recover_path, self.dbpath)
-
-        proc = run_with_timeout(cmd, RECOVER_TIMEOUT_SEC, raise_on_nonzero=False)
+        proc = run_with_timeout(
+            [self.recover_path, "-h", self.dbpath],
+            RECOVER_TIMEOUT_SEC,
+            raise_on_nonzero=False,
+        )
         # We've seen an unrecoverable failure mode where
         # db_recover segfaults, remediable only by a rebuild
         if proc.returncode != StatusCode.SUCCESS:
@@ -380,9 +414,11 @@ class RPMUtil:
         """
         Runs `rpm --rebuilddb`.
         """
-        cmd = "{} --dbpath {} --rebuilddb".format(self.rpm_path, self.dbpath)
         try:
-            run_with_timeout(cmd, REBUILD_TIMEOUT_SEC)
+            run_with_timeout(
+                [self.rpm_path, "--dbpath", self.dbpath, "--rebuilddb"],
+                REBUILD_TIMEOUT_SEC,
+            )
         except DcRPMException:
             self.status_logger.warning("rebuild_tables_failed")
             raise
@@ -390,28 +426,36 @@ class RPMUtil:
     def check_tables(self):
         # type: () -> None
         """
-        Runs the following:
+        Runs the equivalent of:
 
           `rpm -qa --qf | sort | uniq | xargs rpm -q | grep 'is not installed$'`
 
         which checks each rpm in the DB to see if there are inconsistencies between what
         rpm thinks is installed and what is in the DB.
         """
-        cmd = (
-            "{rpm} --dbpath {db} -qa --qf '%{NAME}\\n' | sort | uniq | "
-            "xargs {rpm} --dbpath {db} -q | grep 'is not installed$'"
-        ).format(rpm=self.rpm_path, db=self.dbpath, NAME="NAME")
-
         try:
             result = run_with_timeout(
-                cmd, timeout=RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
+                [self.rpm_path, "--dbpath", self.dbpath, "-qa", "--qf", "%{NAME}\\n"],
+                timeout=RPM_CHECK_TIMEOUT_SEC,
+                exception_to_raise=DBNeedsRebuild,
             )
-        except DcRPMException:
+
+            # Assume healthy if no RPMs listed.
+            rpms = sorted(set(result.stdout.splitlines()))
+            if not rpms:
+                return
+            result = run_with_timeout(
+                [self.rpm_path, "--dbpath", self.dbpath, "-q"] + rpms,
+                timeout=RPM_CHECK_TIMEOUT_SEC,
+                exception_to_raise=DBNeedsRebuild,
+            )
+
+        except DcRPMException as e:
             self.status_logger.warning("initial_table_check_fail")
             raise
 
-        # Grep exit code 1 indicates it didn't find bad condition.
-        if result.returncode == 0:
+        lines = result.stdout.splitlines()
+        if any([line.endswith("is not installed") for line in lines]):
             raise DBNeedsRebuild()
 
     def verify_tables(self):
@@ -424,10 +468,11 @@ class RPMUtil:
                 self.logger.warning("Skipping table '%s', blacklisted", table)
                 continue
 
-            cmd = "{} {}".format(self.verify_path, os.path.join(self.dbpath, table))
             try:
                 result = run_with_timeout(
-                    cmd, VERIFY_TIMEOUT_SEC, raise_on_nonzero=False
+                    [self.verify_path, os.path.join(self.dbpath, table)],
+                    VERIFY_TIMEOUT_SEC,
+                    raise_on_nonzero=False,
                 )
             except DcRPMException:
                 self.status_logger.warning("initial_table_verify_fail")
@@ -444,10 +489,9 @@ class RPMUtil:
         """
         Runs yum-complete-transaction.
         """
-        cmd = "{} --cleanup".format(self.yum_complete_transaction_path)
         self.status_logger.info(RepairAction.CLEAN_YUM_TRANSACTIONS)
         run_with_timeout(
-            cmd,
+            [self.yum_complete_transaction_path, "--cleanup"],
             YUM_COMPLETE_TIMEOUT_SEC,
             raise_on_nonzero=False,
             raise_on_timeout=False,

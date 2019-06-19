@@ -179,10 +179,11 @@ def call_with_timeout(
 
 
 def run_with_timeout(
-    cmd,  # type: str
+    cmd,  # type: t.List[str]
     timeout,  # type: int
     raise_on_nonzero=True,  # type: bool
     raise_on_timeout=True,  # type: bool
+    exception_to_raise=DcRPMException,  # type: Exception
 ):
     # type: (...) -> CompletedProcess
     """
@@ -190,35 +191,32 @@ def run_with_timeout(
     raises a DcRPMException if `cmd` exits with a nonzero status. If
     `raise_on_timeout` is true, raises a DcRPMException if `cmd` times out.
     """
-    _logger.debug("Running %s", cmd)
-    cmdname = cmd.split()[0]
+    if not cmd:
+        raise ValueError("must pass command to run")
+
+    _logger.debug("Running %s", " ".join(cmd))
     proc = subprocess.Popen(
-        cmd,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
     )
     try:
         stdout, stderr = call_with_timeout(proc.communicate, timeout)
     except TimeoutExpired:
-        msg = "%s timed out after %d" % (cmdname, timeout)
+        msg = "%s timed out after %d" % (cmd[0], timeout)
         _logger.error(msg)
 
         # Be nice about ending the process.
-        _logger.info("Terminating %s", cmdname)
+        _logger.info("Terminating %s", cmd[0])
         rc = kindly_end(proc)
         if raise_on_timeout:
-            raise DcRPMException(msg)
-        else:
-            return CompletedProcess(returncode=rc, stdout="", stderr="")
+            raise exception_to_raise(msg)
+        return CompletedProcess(returncode=rc, stdout="", stderr="")
 
     # Now get returncode.
     rc = proc.poll()
     if raise_on_nonzero and rc != 0:
-        msg = "{} returned nonzero exit code ({})".format(cmdname, rc)
+        msg = "{} returned nonzero exit code ({})".format(cmd[0], rc)
         _logger.error(msg)
-        raise DcRPMException(msg)
+        raise exception_to_raise(msg)
 
     return CompletedProcess(returncode=rc, stdout=stdout, stderr=stderr)
 

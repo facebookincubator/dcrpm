@@ -173,7 +173,7 @@ class RPMUtil:
                 "cmd": [
                     self.rpm_path,
                     "-q",
-                    "--conflics",
+                    "--conflicts",
                     "initscripts",
                     "--dbpath",
                     self.dbpath,

@@ -240,7 +240,7 @@ class RPMUtil:
             "Supplementname": None,  # rarely used
             "Transfiletriggername": None,  # rarely used
             "Triggername": None,  # rarely used
-        }  # type: t.Dict[str, t.Optional[t.Dict[str, t.Union[str, t.Iterable[Check]]]]]
+        }  # type: t.Dict[str, t.Optional[t.Dict[str, t.Union[t.Sequence[str], t.Sequence[Check]]]]]
 
         # For some platforms, the command and/or checks need to be tweaked
         os_release_data = self._read_os_release()
@@ -282,7 +282,7 @@ class RPMUtil:
                         lambda proc: len(proc.stdout.splitlines()) >= 1,
                     ],
                 },
-            }  # type: t.Dict[str, t.Dict[str, t.Union[t.Iterable[str], t.Iterable[Check]]]]
+            }  # type: t.Dict[str, t.Dict[str, t.Union[t.Sequence[str], t.Sequence[Check]]]]
             rpmdb_indexes.update(d)
 
         # Checks for Packages db corruption
@@ -308,7 +308,10 @@ class RPMUtil:
                     continue
 
                 self.logger.info("Attempting to selectively poke at %s index", index)
-                self._poke_index(config["cmd"], t.cast(t.List[Check], config["checks"]))
+                self._poke_index(
+                    t.cast(t.List[str], config["cmd"]),
+                    t.cast(t.List[Check], config["checks"]),
+                )
 
             except DBIndexNeedsRebuild:
                 self.status_logger.info(RepairAction.INDEX_REBUILD)
@@ -321,7 +324,9 @@ class RPMUtil:
 
                 # Run the same command again, which should trigger a rebuild
                 proc = run_with_timeout(
-                    config["cmd"], RPM_CHECK_TIMEOUT_SEC, raise_on_nonzero=False
+                    t.cast(t.List[str], config["cmd"]),
+                    RPM_CHECK_TIMEOUT_SEC,
+                    raise_on_nonzero=False,
                 )
 
                 # Sometimes single index rebuilds don't work, as rpm fails to

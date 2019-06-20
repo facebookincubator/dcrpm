@@ -179,7 +179,7 @@ def call_with_timeout(
 
 
 def run_with_timeout(
-    cmd,  # type: t.List[str]
+    cmd,  # type: t.Sequence[str]
     timeout,  # type: int
     raise_on_nonzero=True,  # type: bool
     raise_on_timeout=True,  # type: bool

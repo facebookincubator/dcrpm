@@ -32,11 +32,11 @@ class TestDcRPM(testslide.TestCase):
     def setUp(self):
         # type: () -> None
         super(TestDcRPM, self).setUp()
-        self.rpm_path = "/usr/bin/rpm"  # type: str
+        self.rpm_path = util.which("rpm")  # type: str
         self.dbpath = "/var/lib/rpm"  # type: str
-        self.recover_path = "/usr/bin/db_recover"  # type: str
-        self.verify_path = "/usr/bin/db_verify"  # type: str
-        self.stat_path = "/usr/bin/db_stat"  # type: str
+        self.recover_path = util.which("db_recover")  # type: str
+        self.verify_path = util.which("db_verify")  # type: str
+        self.stat_path = util.which("db_stat")  # type: str
         self.yum_complete_transaction_path = (
             "/usr/bin/yum-complete-transaction"
         )  # type: str

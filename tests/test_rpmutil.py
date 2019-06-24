@@ -10,6 +10,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import platform
 import time
 import typing as t  # noqa
@@ -86,7 +87,7 @@ class TestRPMUtil(testslide.TestCase):
         (
             self.mock_callable(rpmutil, "run_with_timeout")
             .for_call(
-                self.rpm_path + " --dbpath " + self.dbpath + " -q foo",
+                [self.rpm_path, "--dbpath", self.dbpath, "-q", "foo"],
                 rpmutil.RPM_CHECK_TIMEOUT_SEC,
             )
             .to_return_value(
@@ -101,7 +102,7 @@ class TestRPMUtil(testslide.TestCase):
         (
             self.mock_callable(rpmutil, "run_with_timeout")
             .for_call(
-                self.rpm_path + " --dbpath " + self.dbpath + " -q foo",
+                [self.rpm_path, "--dbpath", self.dbpath, "-q", "foo"],
                 rpmutil.RPM_CHECK_TIMEOUT_SEC,
             )
             .to_return_value(
@@ -195,7 +196,97 @@ class TestRPMUtil(testslide.TestCase):
         # type: () -> None
         (
             self.mock_callable(rpmutil, "run_with_timeout")
-            .to_return_value(CompletedProcess(returncode=1))
+            .to_return_value(CompletedProcess(returncode=0))
+            .and_assert_called_once()
+        )
+        self.rpmutil.check_tables()
+
+    def test_check_tables_raises_on_list_all(self):
+        # type: () -> None
+        (
+            self.mock_callable(rpmutil, "run_with_timeout")
+            .for_call(
+                [self.rpm_path, "--dbpath", self.dbpath, "-qa", "--qf", "%{NAME}\\n"],
+                timeout=rpmutil.RPM_CHECK_TIMEOUT_SEC,
+                exception_to_raise=DBNeedsRebuild,
+            )
+            .to_raise(DBNeedsRebuild)
+            .and_assert_called_once()
+        )
+        with self.assertRaises(DBNeedsRebuild):
+            self.rpmutil.check_tables()
+
+    def test_check_tables_success_on_no_rpms(self):
+        # type: () -> None
+        (
+            self.mock_callable(rpmutil, "run_with_timeout")
+            .for_call(
+                [self.rpm_path, "--dbpath", self.dbpath, "-qa", "--qf", "%{NAME}\\n"],
+                timeout=rpmutil.RPM_CHECK_TIMEOUT_SEC,
+                exception_to_raise=DBNeedsRebuild,
+            )
+            .to_return_value(CompletedProcess(returncode=0, stdout=""))
+            .and_assert_called_once()
+        )
+        self.rpmutil.check_tables()
+
+    def test_check_tables_raises_on_query(self):
+        # type: () -> None
+        (
+            self.mock_callable(rpmutil, "run_with_timeout")
+            .for_call(
+                [self.rpm_path, "--dbpath", self.dbpath, "-qa", "--qf", "%{NAME}\\n"],
+                timeout=rpmutil.RPM_CHECK_TIMEOUT_SEC,
+                exception_to_raise=DBNeedsRebuild,
+            )
+            .to_return_value(CompletedProcess(returncode=0, stdout="foo\nbaz\nfoo"))
+            .and_assert_called_once()
+        )
+        (
+            self.mock_callable(rpmutil, "run_with_timeout")
+            .for_call(
+                [self.rpm_path, "--dbpath", self.dbpath, "-q", "baz", "foo"],
+                timeout=rpmutil.RPM_CHECK_TIMEOUT_SEC,
+                exception_to_raise=DBNeedsRebuild,
+            )
+            .to_raise(DBNeedsRebuild)
+            .and_assert_called_once()
+        )
+        with self.assertRaises(DBNeedsRebuild):
+            self.rpmutil.check_tables()
+
+    def test_check_tables_raises_on_uninstalled(self):
+        # type: () -> None
+        (
+            self.mock_callable(rpmutil, "run_with_timeout")
+            .for_call(
+                [self.rpm_path, "--dbpath", self.dbpath, "-qa", "--qf", "%{NAME}\\n"],
+                timeout=rpmutil.RPM_CHECK_TIMEOUT_SEC,
+                exception_to_raise=DBNeedsRebuild,
+            )
+            .to_return_value(CompletedProcess(returncode=0, stdout="foo\nbaz\nfoo"))
+            .and_assert_called_once()
+        )
+        (
+            self.mock_callable(rpmutil, "run_with_timeout")
+            .for_call(
+                [self.rpm_path, "--dbpath", self.dbpath, "-q", "baz", "foo"],
+                timeout=rpmutil.RPM_CHECK_TIMEOUT_SEC,
+                exception_to_raise=DBNeedsRebuild,
+            )
+            .to_return_value(
+                CompletedProcess(returncode=0, stdout="baz is not installed\nfoo")
+            )
+            .and_assert_called_once()
+        )
+        with self.assertRaises(DBNeedsRebuild):
+            self.rpmutil.check_tables()
+
+    def test_check_tables_(self):
+        # type: () -> None
+        (
+            self.mock_callable(rpmutil, "run_with_timeout")
+            .to_return_value(CompletedProcess(returncode=0, stdout=""))
             .and_assert_called_once()
         )
         self.rpmutil.check_tables()
@@ -207,7 +298,7 @@ class TestRPMUtil(testslide.TestCase):
         (
             self.mock_callable(rpmutil, "run_with_timeout")
             .for_call(
-                "%s /var/lib/rpm/table0" % self.verify_path,
+                [self.verify_path, "/var/lib/rpm/table0"],
                 rpmutil.VERIFY_TIMEOUT_SEC,
                 raise_on_nonzero=False,
             )
@@ -217,7 +308,7 @@ class TestRPMUtil(testslide.TestCase):
         (
             self.mock_callable(rpmutil, "run_with_timeout")
             .for_call(
-                "%s /var/lib/rpm/table3" % self.verify_path,
+                [self.verify_path, "/var/lib/rpm/table3"],
                 rpmutil.VERIFY_TIMEOUT_SEC,
                 raise_on_nonzero=False,
             )
@@ -237,7 +328,7 @@ class TestRPMUtil(testslide.TestCase):
         (
             self.mock_callable(rpmutil, "run_with_timeout")
             .for_call(
-                "%s %s/table0" % (self.verify_path, self.dbpath),
+                [self.verify_path, os.path.join(self.dbpath, "table0")],
                 rpmutil.RPM_CHECK_TIMEOUT_SEC,
                 raise_on_nonzero=False,
             )

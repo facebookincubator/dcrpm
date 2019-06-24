@@ -48,8 +48,9 @@ def process(pid):
 def _pids_holding_file(lsof, path):
     # type: (str, str) -> t.Set[int]
     try:
-        cmd = "{} -F p {}".format(lsof, path)
-        proc = run_with_timeout(cmd, LSOF_TIMEOUT, raise_on_nonzero=False)
+        proc = run_with_timeout(
+            [lsof, "-F", "p", path], LSOF_TIMEOUT, raise_on_nonzero=False
+        )
     except DcRPMException:
         logger.warning("lsof timed out")
         return set()

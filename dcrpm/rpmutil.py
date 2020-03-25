@@ -29,6 +29,7 @@ from .util import (
     RepairAction,
     StatusCode,
     memoize,
+    read_os_name,
     run_with_timeout,
 )
 
@@ -117,34 +118,6 @@ class RPMUtil:
         for check in checks:
             if not check(proc):
                 raise DBIndexNeedsRebuild
-
-    @memoize
-    def _read_os_name(self):
-        # type: () -> str
-        """
-        Call platform.system() and caches the value
-        """
-        import platform
-
-        return platform.system()
-
-    @memoize
-    def _read_os_release(self):
-        # type: () -> t.Dict[str, str]
-        """
-        Read /etc/os-release (if it exists) and parse the key/value data into
-        a dict.
-        """
-        data = {}
-        if os.path.exists("/etc/os-release"):
-            with open("/etc/os-release", "r") as f:
-                for line in f:
-                    if line.strip() == "":
-                        continue
-                    (key, value) = line.split("=", 2)
-                    data[key.strip()] = value.strip()
-
-        return data
 
     def check_rpmdb_indexes(self):
         # type: () -> None
@@ -315,7 +288,7 @@ class RPMUtil:
         # This test only makes sense on Linux; on macOS RPM is not the native
         # package manager, so a freshly-installed system can have
         # very few RPMs
-        if self._read_os_name() == "Linux":
+        if read_os_name() == "Linux":
             if len(packages) < MIN_ACCEPTABLE_PKG_COUNT:
                 self.logger.error(
                     "rpm package count seems too low; saw %d, expected at least %d",

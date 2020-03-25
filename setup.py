@@ -39,9 +39,11 @@ except Exception:
 if sys.version_info.major < 3 or (
     sys.version_info.major == 3 and sys.version_info.minor < 6
 ):
-    tests_require = ["mock", "typing", "TestSlide"]
+    tests_require = ["mock", "typing"]
 else:
     tests_require = []
+
+tests_require.append("TestSlide")
 
 setup(
     name="dcrpm",

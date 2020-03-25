@@ -174,13 +174,13 @@ class RPMUtil:
                     self.rpm_path,
                     "-q",
                     "--conflicts",
-                    "initscripts",
+                    "setup",
                     "--dbpath",
                     self.dbpath,
                 ],
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
-                    lambda proc: len(proc.stdout.splitlines()) > 3,
+                    lambda proc: len(proc.stdout.splitlines()) == 3,
                 ],
             },
             "Obsoletename": {
@@ -194,7 +194,7 @@ class RPMUtil:
                 ],
                 "checks": [
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
-                    lambda proc: len(proc.stdout.splitlines()) > 2,
+                    lambda proc: len(proc.stdout.splitlines()) >= 1,
                 ],
             },
             "Providename": {
@@ -241,49 +241,6 @@ class RPMUtil:
             "Transfiletriggername": None,  # rarely used
             "Triggername": None,  # rarely used
         }  # type: t.Dict[str, t.Optional[t.Dict[str, t.Union[t.Sequence[str], t.Sequence[Check]]]]]
-
-        # For some platforms, the command and/or checks need to be tweaked
-        os_release_data = self._read_os_release()
-        os_id = os_release_data.get("ID", "")
-        if os_id == "fedora":
-            # Fedora has two differences from CentOS:
-            # - For Conflictname, initscripts is installed, but no capabilities
-            #   conflict with it. systemd is another mandatory core package
-            #   which does have capabilities which conflict with it, but it only
-            #   has two (as of Fedora 28/29).
-            # - For Obsoletename, coreutils only obsoletes older versions of
-            #   itself.
-            d = {
-                "Conflictname": {
-                    "cmd": [
-                        self.rpm_path,
-                        "-q",
-                        "--conflicts",
-                        "systemd",
-                        "--dbpath",
-                        self.dbpath,
-                    ],
-                    "checks": [
-                        lambda proc: proc.returncode != StatusCode.SEGFAULT,
-                        lambda proc: len(proc.stdout.splitlines()) >= 2,
-                    ],
-                },
-                "Obsoletename": {
-                    "cmd": [
-                        self.rpm_path,
-                        "-q",
-                        "--obsoletes",
-                        "coreutils",
-                        "--dbpath",
-                        self.dbpath,
-                    ],
-                    "checks": [
-                        lambda proc: proc.returncode != StatusCode.SEGFAULT,
-                        lambda proc: len(proc.stdout.splitlines()) >= 1,
-                    ],
-                },
-            }  # type: t.Dict[str, t.Dict[str, t.Union[t.Sequence[str], t.Sequence[Check]]]]
-            rpmdb_indexes.update(d)
 
         # Checks for Packages db corruption
         post_checks = [

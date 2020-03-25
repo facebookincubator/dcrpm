@@ -15,7 +15,7 @@ import signal
 import time
 
 from . import pidutil
-from .util import DBNeedsRebuild, DcRPMException, RepairAction, run_with_timeout
+from .util import DBNeedsRebuild, DcRPMException, RepairAction, run_with_timeout, which
 
 
 YUM_PID_PATH = "/var/run/yum.pid"  # type: str
@@ -23,6 +23,7 @@ YUM_TIMEOUT_SEC = 30  # type: int
 # 6 hours
 MIN_YUM_AGE = 3600 * 6  # type: int
 YUM_CMD_NAME = "yum"  # type: str
+DNF_CMD_NAME = "dnf"  # type: str
 KILL_TIMEOUT = 5  # type: int
 
 
@@ -31,12 +32,22 @@ class Yum:
         # type: () -> None
         self.logger = logging.getLogger()  # type: logging.Logger
         self.status_logger = logging.getLogger("status")  # type: logging.Logger
+        self.yum = YUM_CMD_NAME  # type: str
+        try:
+            which(self.yum)
+        except DcRPMException:
+            try:
+                self.yum = DNF_CMD_NAME
+                which(self.yum)
+            except DcRPMException:
+                raise DcRPMException("Neither yum nor dnf was found!")
+
+        self.logger.info("Using %s for yum" % self.yum)
 
     def check_stuck(self, dry_run=False):
         # type: (bool) -> bool
         try:
             pid, mtime = pidutil.pidfile_info(YUM_PID_PATH)
-
         # Fine if there's no pidfile, means nothing is using yum.
         except IOError:
             self.logger.info("No yum pid found. Assuming yum not stuck.")
@@ -60,10 +71,8 @@ class Yum:
             self.status_logger.warning("Failed to get command name")
             return False
         name = proc.name()
-        if name != YUM_CMD_NAME:
-            msg = "Found wrong command name [{}], expecting {}".format(
-                name, YUM_CMD_NAME
-            )
+        if name != self.yum:
+            msg = "Found wrong command name [{}], expecting {}".format(name, self.yum)
             self.status_logger.warning(msg)
             self.logger.error(msg)
             return False
@@ -88,7 +97,7 @@ class Yum:
         were busted
         """
         try:
-            run_with_timeout([YUM_CMD_NAME, "clean", "expire-cache"], YUM_TIMEOUT_SEC)
+            run_with_timeout([self.yum, "clean", "expire-cache"], YUM_TIMEOUT_SEC)
         except DcRPMException:
             raise DBNeedsRebuild
 
@@ -98,6 +107,6 @@ class Yum:
         Run yum check - which "Checks for problems in the rpmdb"
         """
         try:
-            run_with_timeout([YUM_CMD_NAME, "check"], YUM_TIMEOUT_SEC)
+            run_with_timeout([self.yum, "check"], YUM_TIMEOUT_SEC)
         except DcRPMException:
             raise DBNeedsRebuild

@@ -11,6 +11,7 @@ addons:
     packages:
       - db-util
       - rpm
+      - yum
 
 matrix:
   include:

@@ -19,6 +19,6 @@ from __future__ import unicode_literals
 
 import sys
 
-__version__ = "0.5.0"  # type: str
+__version__ = "0.6.0"  # type: str
 
 sys.modules[__name__] = __version__

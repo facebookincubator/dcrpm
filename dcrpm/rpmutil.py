@@ -470,3 +470,31 @@ class RPMUtil:
                 self.logger.warning(
                     "Timed out after %ds waiting for pid %d", kill_timeout, proc.pid
                 )
+
+    def _get_macros(self):
+        # type: () -> t.Dict[str, str]
+        result = run_with_timeout(
+            [self.rpm_path, "--dbpath", self.dbpath, "--showrc"],
+            timeout=RPM_CHECK_TIMEOUT_SEC,
+        )
+        macros = {}  # type: t.Dict[str, str]
+        for line in result.stdout.splitlines():
+            # TODO: make this parse multi-line macros properly
+            m = re.match(r"^-\d+:\s+(\w+)\s+([\w\s]+)$", line)
+            if m:
+                key = m.group(1)
+                val = m.group(2)
+                if key and val:
+                    macros[key] = val
+
+        self.logger.debug("RPM macros = %s" % macros)
+        return macros
+
+    def get_db_backend(self):
+        # type: () -> str
+        macros = self._get_macros()
+        if "_db_backend" in macros:
+            return macros["_db_backend"]
+        else:
+            self.logger.warning("No db_backend found in macros, assuming bdb")
+            return "bdb"

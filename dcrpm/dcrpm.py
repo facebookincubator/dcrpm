@@ -57,6 +57,9 @@ class DcRPM:
             if not result:
                 self.logger.error("Failed to unstuck yum processes")
 
+        # Detect database backend
+        backend = self.rpmutil.get_db_backend()
+
         # Start main checks.
         for i in range(self.args.max_passes):
             self.logger.debug("Running pass: %d", i)
@@ -64,8 +67,15 @@ class DcRPM:
             try:
                 # Optional forensic data collection
                 if self.args.forensic:
-                    self.logger.info("Running forensic data collection (db_stat -CA)")
-                    self.rpmutil.db_stat()
+                    if backend == "bdb":
+                        self.logger.info(
+                            "Running forensic data collection (db_stat -CA)"
+                        )
+                        self.rpmutil.db_stat()
+                    else:
+                        self.logger.warning(
+                            "Forensics data collection is not supported on %s" % backend
+                        )
 
                 # Kill any straggler rpm query processes
                 self.logger.info("Searching for spinning rpm query processes")
@@ -110,15 +120,25 @@ class DcRPM:
                 self.logger.info("Table checks OK")
 
                 # Verify tables (db_verify for each file).
-                self.logger.info("Verifying each table in %s", self.args.dbpath)
-                if not self.call_verify_tables():
-                    continue
+                if backend == "bdb":
+                    self.logger.info("Verifying each table in %s", self.args.dbpath)
+                    if not self.call_verify_tables():
+                        continue
+                else:
+                    self.logger.warning(
+                        "Table verification is not implemented for %s" % backend
+                    )
 
             # Need to run db_recover.
             except DBNeedsRecovery:
                 self.logger.error("DB needs recovery")
                 try:
-                    self.run_recovery()
+                    if backend == "bdb":
+                        self.run_recovery()
+                    else:
+                        self.logger.warning(
+                            "Recovery is not implemented for %s" % backend
+                        )
                     self.rpmutil.check_rpmdb_indexes()
                     continue
                 except (DBNeedsRebuild, DBNeedsRecovery):

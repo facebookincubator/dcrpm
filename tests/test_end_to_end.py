@@ -76,3 +76,18 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
         run_result = self.dcrpm.run()
         self.assertEqual(self.action_trace(), [])
         self.assertTrue(run_result)
+
+    # CentOS Linux release 8.1.1911 (Core)
+    # dnf-4.2.7-7.el8_1.noarch
+    # rpm-4.14.2-25.el8.x86_64
+    # rpm-libs-4.14.2-25.el8.x86_64
+    @RPMDB.from_file("rpmdb_centos8")
+    def test_rpmdb_centos8(self, dbpath):
+        # type: (str) -> None
+        self.rpmutil.dbpath = dbpath
+        self.rpmutil.populate_tables()
+        self.rpmutil._read_os_release = lambda: {"ID": "centos"}
+        self.dcrpm.args.dbpath = dbpath
+        run_result = self.dcrpm.run()
+        self.assertEqual(self.action_trace(), [])
+        self.assertTrue(run_result)

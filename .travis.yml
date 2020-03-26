@@ -5,6 +5,7 @@ python:
   - 2.7
   - 3.4
   - 3.6
+  - 3.7
 
 addons:
   apt:
@@ -12,13 +13,14 @@ addons:
       - db-util
       - rpm
       - yum
+  homebrew:
+    packages:
+      - pyenv
+      - rpm
+    update: true
 
 matrix:
   include:
-    # workaround for https://github.com/travis-ci/travis-ci/issues/9815
-    - python: 3.7
-      dist: xenial
-      sudo: true
     # workaround for https://github.com/travis-ci/travis-ci/issues/2312
     - os: osx
       language: generic
@@ -48,17 +50,13 @@ matrix:
 
 before_install: |
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-    brew update
-
     # setup python
-    brew outdated pyenv || brew upgrade pyenv
     pyenv install "$PYTHON_VERSION"
     eval "$(pyenv init -)"
     pyenv global "$PYTHON_VERSION"
     pip install -r requirements.txt
 
     # setup rpm
-    brew install rpm
     sudo mkdir -p /var/lib/rpm
   fi
 

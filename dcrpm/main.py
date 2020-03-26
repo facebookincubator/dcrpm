@@ -164,11 +164,16 @@ def main():
     # Set up logging
     if args.logging_config_file:
         with open(args.logging_config_file) as f:
-            logging.config.dictConfig(json.load(f))
+            config = json.load(f)
     else:
-        logging.config.dictConfig(DEFAULT_LOGGING_CONFIG)
+        config = DEFAULT_LOGGING_CONFIG
     if args.verbose:
+        if "handlers" in config:
+            for handler in config["handlers"]:
+                config["handlers"][handler]["level"] = "DEBUG"
         logging.getLogger().setLevel(logging.DEBUG)
+
+    logging.config.dictConfig(config)
 
     # Let's go!
     rpmutil = RPMUtil(

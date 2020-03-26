@@ -30,6 +30,21 @@ class DcrpmIntegrationTest(DcrpmIntegrationTestBase):
         self.assertEqual(self.action_trace(), [])
         self.assertTrue(run_result)
 
+    # Fedora release 31 (Thirty One)
+    # dnf-4.2.9-5.fc31.noarch
+    # rpm-4.15.0-6.fc31.x86_64
+    # rpm-libs-4.15.0-6.fc31.x86_64
+    @RPMDB.from_file("rpmdb_fedora31")
+    def test_rpmdb_fedora31(self, dbpath):
+        # type: (str) -> None
+        self.rpmutil.dbpath = dbpath
+        self.rpmutil.populate_tables()
+        self.rpmutil._read_os_release = lambda: {"ID": "fedora"}
+        self.dcrpm.args.dbpath = dbpath
+        run_result = self.dcrpm.run()
+        self.assertEqual(self.action_trace(), [])
+        self.assertTrue(run_result)
+
     # TODO: figure out a way to gracefully skip this on c7, T30275604
     # CentOS release 6.9 (Final)
     # yum-3.2.29-81.el6.centos.noarch

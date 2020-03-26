@@ -260,3 +260,33 @@ def which(cmd):
                 return p
 
     raise DcRPMException("could not find '{}' in $PATH".format(cmd))
+
+
+@memoize
+def read_os_name():
+    # type: () -> str
+    """
+    Call platform.system() and caches the value
+    """
+    import platform
+
+    return platform.system()
+
+
+@memoize
+def read_os_release():
+    # type: () -> t.Dict[str, str]
+    """
+    Read /etc/os-release (if it exists) and parse the key/value data into
+    a dict.
+    """
+    data = {}
+    if os.path.exists("/etc/os-release"):
+        with open("/etc/os-release", "r") as f:
+            for line in f:
+                if line.strip() == "":
+                    continue
+                (key, value) = line.split("=", 2)
+                data[key.strip()] = value.strip()
+
+    return data

@@ -11,7 +11,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-import platform
 import time
 import typing as t  # noqa
 
@@ -135,7 +134,7 @@ class TestRPMUtil(testslide.TestCase):
             .and_assert_called_once()
         )
         (
-            self.mock_callable(platform, "system")
+            self.mock_callable(rpmutil, "read_os_name")
             .to_return_value("Linux")
             .and_assert_called_once()
         )
@@ -152,7 +151,7 @@ class TestRPMUtil(testslide.TestCase):
             .and_assert_called_once()
         )
         (
-            self.mock_callable(platform, "system")
+            self.mock_callable(rpmutil, "read_os_name")
             .to_return_value("Darwin")
             .and_assert_called_once()
         )

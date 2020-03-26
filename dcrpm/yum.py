@@ -15,7 +15,14 @@ import signal
 import time
 
 from . import pidutil
-from .util import DBNeedsRebuild, DcRPMException, RepairAction, run_with_timeout, which
+from .util import (
+    DBNeedsRebuild,
+    DcRPMException,
+    RepairAction,
+    read_os_name,
+    run_with_timeout,
+    which,
+)
 
 
 YUM_PID_PATH = "/var/run/yum.pid"  # type: str
@@ -40,7 +47,12 @@ class Yum:
                 self.yum = DNF_CMD_NAME
                 which(self.yum)
             except DcRPMException:
-                raise DcRPMException("Neither yum nor dnf was found!")
+                self.yum = YUM_CMD_NAME
+                m = "Neither yum nor dnf was found!"
+                if read_os_name() == "Darwin":
+                    self.logger.warning(m)
+                else:
+                    raise DcRPMException(m)
 
         self.logger.info("Using %s for yum" % self.yum)
 

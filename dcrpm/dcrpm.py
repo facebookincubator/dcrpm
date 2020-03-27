@@ -13,7 +13,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import signal
-import typing as t
+
 from fnmatch import fnmatch
 from os.path import join
 
@@ -21,11 +21,15 @@ from . import pidutil
 from .util import DBNeedsRebuild, DBNeedsRecovery, DcRPMException, RepairAction
 from .yum import Yum
 
+try:
+    import typing as t
 
-if t.TYPE_CHECKING:
-    import argparse
+    if t.TYPE_CHECKING:
+        import argparse
 
-    from .rpmutil import RPMUtil
+        from .rpmutil import RPMUtil
+except ImportError:
+    pass
 
 
 class DcRPM:

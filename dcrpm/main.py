@@ -15,13 +15,16 @@ import json
 import logging
 import logging.config
 import sys
-import typing as t  # noqa
 
 from . import __version__
 from .dcrpm import DcRPM
 from .rpmutil import RPMUtil
 from .util import which
 
+try:
+    import typing as t  # noqa
+except ImportError:
+    pass
 
 # Some sensible defaults.
 DEFAULT_MAX_PASSES = 5  # type: int

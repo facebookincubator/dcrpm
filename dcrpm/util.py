@@ -14,19 +14,19 @@ import logging
 import os
 import signal
 import subprocess
-import typing as t
 
+try:
+    import typing as t
 
-if t.TYPE_CHECKING:
-    from types import FrameType
+    if t.TYPE_CHECKING:
+        from types import FrameType
+except ImportError:
+    pass
 
 
 END_TIMEOUT = 5  # type: int
 
 _logger = logging.getLogger()  # type: logging.Logger
-
-# Generic ReturnType
-RT = t.TypeVar("RT")
 
 
 class StatusCode:
@@ -120,13 +120,15 @@ ACTION_NAMES = {
 }  # type: t.Dict[int, str]
 
 
+# pyre-ignore[2,3]: workaround pyre bug
 def memoize(f):
-    # type: (t.Callable[..., RT]) -> t.Callable[..., RT]
-    cache = {}  # type: t.Dict[str, RT]
+    # type: (t.Callable[..., t.TypeVar("RT")]) -> t.Callable[..., t.TypeVar("RT")]
+
+    cache = {}  # type: t.Dict[str, t.TypeVar("RT")]
 
     # pyre-ignore[2]: *args and **kwargs
     def wrapper(*args, **kwargs):
-        # type: (t.Any, t.Any) -> RT
+        # type: (t.Any, t.Any) -> t.TypeVar("RT")
         key = str(args) + str(kwargs)
         if key not in cache:
             cache[key] = f(*args, **kwargs)
@@ -144,13 +146,13 @@ def alarm_handler(signum, frame):
 
 
 def call_with_timeout(
-    func,  # type: t.Callable[..., RT]
+    func,  # type: t.Callable[..., t.TypeVar("RT")]
     timeout,  # type: int
     args=None,  # type: t.Optional[t.Iterable[str]]
     # pyre-ignore[2]: kwargs has type dict[str, Any]
     kwargs=None,  # type: t.Optional[t.Dict[str, t.Any]]
 ):
-    # type: (...) -> RT
+    # type: (...) -> t.TypeVar("RT")
     """
     A generic method that calls some callable and uses SIGALRM to time out the
     call should it take longer than `timeout`.

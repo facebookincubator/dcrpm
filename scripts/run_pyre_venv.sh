@@ -30,4 +30,5 @@ root=$(git rev-parse --show-toplevel)
     --output text \
     --search-path "$(get_site_packages)" \
     --search-path "$root" \
+    --show-parse-errors \
     check

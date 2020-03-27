@@ -12,15 +12,18 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import os
-import typing as t
 
 import psutil
 
 from .util import DcRPMException, StatusCode, TimeoutExpired, run_with_timeout, which
 
+try:
+    import typing as t
 
-if t.TYPE_CHECKING:
-    import enum
+    if t.TYPE_CHECKING:
+        import enum
+except ImportError:
+    pass
 
 
 DEFAULT_TIMEOUT = 5  # type: int

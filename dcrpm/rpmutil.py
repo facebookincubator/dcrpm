@@ -16,7 +16,6 @@ import re
 import signal
 import sys
 import time
-import typing as t
 
 import psutil
 
@@ -33,6 +32,12 @@ from .util import (
     run_with_timeout,
 )
 
+try:
+    import typing as t
+except ImportError:
+    t = None
+    pass
+
 
 RPM_CHECK_TIMEOUT_SEC = 5  # type: int
 YUM_COMPLETE_TIMEOUT_SEC = 10  # type: int
@@ -40,9 +45,6 @@ VERIFY_TIMEOUT_SEC = 5  # type: int
 RECOVER_TIMEOUT_SEC = 90  # type: int
 REBUILD_TIMEOUT_SEC = 300  # type: int
 MIN_ACCEPTABLE_PKG_COUNT = 50  # type: int
-
-
-Check = t.Callable[[CompletedProcess], bool]
 
 
 class RPMUtil:
@@ -110,7 +112,7 @@ class RPMUtil:
             self.logger.error("db_stat -CA failed")
 
     def _poke_index(self, cmd, checks):
-        # type: (t.Sequence[str], t.Iterable[Check]) -> None
+        # type: (t.Sequence[str], t.Iterable[t.Callable[[CompletedProcess], bool]]) -> CompletedProcess
         """
         Run cmd, and ensure all checks are True. Raise DBIndexNeedsRebuild otherwise
         """
@@ -118,6 +120,8 @@ class RPMUtil:
         for check in checks:
             if not check(proc):
                 raise DBIndexNeedsRebuild
+
+        return proc
 
     def check_rpmdb_indexes(self):
         # type: () -> None
@@ -213,7 +217,7 @@ class RPMUtil:
             "Supplementname": None,  # rarely used
             "Transfiletriggername": None,  # rarely used
             "Triggername": None,  # rarely used
-        }  # type: t.Dict[str, t.Optional[t.Dict[str, t.Union[t.Sequence[str], t.Sequence[Check]]]]]
+        }  # type: t.Dict[str, t.Optional[t.Dict[str, t.Union[t.Sequence[str], t.Sequence[t.Callable[[CompletedProcess], bool]]]]]]
 
         # Checks for Packages db corruption
         post_checks = [
@@ -238,10 +242,17 @@ class RPMUtil:
                     continue
 
                 self.logger.info("Attempting to selectively poke at %s index", index)
-                self._poke_index(
-                    t.cast(t.List[str], config["cmd"]),
-                    t.cast(t.List[Check], config["checks"]),
-                )
+                if t:
+                    self._poke_index(
+                        t.cast(t.List[str], config["cmd"]),
+                        t.cast(
+                            t.List[t.Callable[[CompletedProcess], bool]],
+                            config["checks"],
+                        ),
+                    )
+                else:
+                    # pyre-ignore[6]: config["cmd"] and config["checks"]
+                    self._poke_index(config["cmd"], config["checks"])
 
             except DBIndexNeedsRebuild:
                 self.status_logger.info(RepairAction.INDEX_REBUILD)
@@ -253,11 +264,11 @@ class RPMUtil:
                     self.logger.info("%s index is missing", index)
 
                 # Run the same command again, which should trigger a rebuild
-                proc = run_with_timeout(
-                    t.cast(t.List[str], config["cmd"]),
-                    RPM_CHECK_TIMEOUT_SEC,
-                    raise_on_nonzero=False,
-                )
+                if t:
+                    proc = self._poke_index(t.cast(t.List[str], config["cmd"]), [])
+                else:
+                    # pyre-ignore[6]: config["cmd"]
+                    proc = self._poke_index(config["cmd"], [])
 
                 # Sometimes single index rebuilds don't work, as rpm fails to
                 # open Packages db. In that case we'll try a full recovery

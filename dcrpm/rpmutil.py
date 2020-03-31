@@ -202,7 +202,8 @@ class RPMUtil:
                     lambda proc: proc.returncode != StatusCode.SEGFAULT,
                     lambda proc: len(proc.stdout.splitlines()) >= 1,
                     lambda proc: any(
-                        line.startswith("rpm-") for line in proc.stdout.splitlines()
+                        line.startswith("rpm-") or line.startswith("yum-")
+                        for line in proc.stdout.splitlines()
                     ),
                 ],
             },

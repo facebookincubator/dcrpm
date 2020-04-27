@@ -13,7 +13,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import time
-import typing as t
+
+try:
+    import typing as t
+except ImportError:
+    pass
+
 from datetime import datetime
 
 

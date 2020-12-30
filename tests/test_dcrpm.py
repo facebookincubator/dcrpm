@@ -90,6 +90,11 @@ class TestDcRPM(testslide.TestCase):
         # type: () -> None
         self.mock_callable(pidutil, "send_signals").and_assert_not_called()
         (
+            self.mock_callable(self.rpmutil, "get_db_backend")
+            .to_return_value("bdb")
+            .and_assert_called()
+        )
+        (
             self.mock_callable(self.rpmutil, "db_stat")
             .to_return_value(None)
             .and_assert_called()

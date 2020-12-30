@@ -86,7 +86,7 @@ class TestUtil(testslide.TestCase):
     def test_run_with_timeout_success(self):
         # type: () -> None
         (
-            self.mock_callable(subprocess, "Popen")
+            self.mock_constructor(subprocess, "Popen")
             .for_call(
                 ["/bin/true"],
                 stdout=subprocess.PIPE,
@@ -103,7 +103,7 @@ class TestUtil(testslide.TestCase):
         # type: () -> None
         mock_popen = make_mock_popen(communicate_raise=True)
         (
-            self.mock_callable(subprocess, "Popen")
+            self.mock_constructor(subprocess, "Popen")
             .for_call(
                 ["/bin/true"],
                 stdout=subprocess.PIPE,
@@ -121,7 +121,7 @@ class TestUtil(testslide.TestCase):
         # type: () -> None
         mock_popen = make_mock_popen(communicate_raise=True)
         (
-            self.mock_callable(subprocess, "Popen")
+            self.mock_constructor(subprocess, "Popen")
             .for_call(
                 ["/bin/true"],
                 stdout=subprocess.PIPE,
@@ -140,7 +140,7 @@ class TestUtil(testslide.TestCase):
         # type: () -> None
         mock_popen = make_mock_popen(communicate_raise=True, terminate_raise=True)
         (
-            self.mock_callable(subprocess, "Popen")
+            self.mock_constructor(subprocess, "Popen")
             .for_call(
                 ["/bin/true"],
                 stdout=subprocess.PIPE,
@@ -158,7 +158,7 @@ class TestUtil(testslide.TestCase):
     def test_run_with_timeout_raise_on_nonzero(self):
         # type: () -> None
         (
-            self.mock_callable(subprocess, "Popen")
+            self.mock_constructor(subprocess, "Popen")
             .for_call(
                 ["/bin/true"],
                 stdout=subprocess.PIPE,
@@ -174,7 +174,7 @@ class TestUtil(testslide.TestCase):
     def test_run_with_timeout_no_raise_on_nonzero(self):
         # type: () -> None
         (
-            self.mock_callable(subprocess, "Popen")
+            self.mock_constructor(subprocess, "Popen")
             .for_call(
                 ["/bin/true"],
                 stdout=subprocess.PIPE,
@@ -191,7 +191,7 @@ class TestUtil(testslide.TestCase):
         # type: () -> None
         mock_popen = make_mock_popen(returncode=1, communicate_raise=True)
         (
-            self.mock_callable(subprocess, "Popen")
+            self.mock_constructor(subprocess, "Popen")
             .for_call(
                 ["/bin/true"],
                 stdout=subprocess.PIPE,

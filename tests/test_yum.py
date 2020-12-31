@@ -22,6 +22,7 @@ class TestYum(testslide.TestCase):
         # type: () -> None
         super(TestYum, self).setUp()
         self.yum = yum.Yum()  # type: yum.Yum
+        self.yum.yum = "fakeyum"
 
     # check_stuck
     def test_check_stuck_filenotfound(self):
@@ -91,7 +92,9 @@ class TestYum(testslide.TestCase):
         (
             self.mock_callable(pidutil, "process")
             .for_call(12345)
-            .to_return_value(make_mock_process(pid=12345, open_files=[], name="yum"))
+            .to_return_value(
+                make_mock_process(pid=12345, open_files=[], name="fakeyum")
+            )
             .and_assert_called_once()
         )
         self.assertTrue(self.yum.check_stuck())

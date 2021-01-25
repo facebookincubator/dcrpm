@@ -10,12 +10,19 @@ Run `dcrpm` with no option to detect and correct any outstanding issues with RPM
 ## Requirements
 dcrpm requires Python 2.7 and above and the package psutil. It also requires `lsof` to be in `$PATH`. It should work on any Linux distribution with RPM and on Mac OS X.
 
-## Building and installing dcrpm
-The easiest way to install dcrpm is get the source and install it using setup.py:
+## Installing dcrpm
+dcrpm is packaged in Fedora as of Fedora 32 and in EPEL as of EPEL 8. It can be installed with:
+
+    dnf install dcrpm
+
+This will also install any necessary dependencies at the same time.
+
+## Building and installing dcrpm from source
+The easiest way to manually install dcrpm is get the source and install it using setup.py:
 
     python setup.py install
 
-This will fetch psutil from pypi for you. dcrpm also assumes that the system will have RPM and Yum installed.
+This will fetch psutil from PyPI for you. dcrpm also assumes that the system will have RPM and Yum or DNF installed.
 
 
 ## Building and installing for development

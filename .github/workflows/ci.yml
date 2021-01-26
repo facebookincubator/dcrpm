@@ -4,12 +4,17 @@ on:
     branches: [master]
   pull_request:
 jobs:
-  ruby:
+  python:
     strategy:
       fail-fast: false
       matrix:
-        python: [2.7, 3.5, 3.6, 3.7, 3.8]
-    runs-on: ubuntu-latest	
+        os: [ubuntu-latest, macos-latest]
+        python: [2.7, 3.4, 3.6, 3.7, 3.8]
+        exclude:
+          # Python 3.4 isn't available on macOS
+          - os: macos-latest
+            python: 3.4
+    runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -18,18 +23,16 @@ jobs:
       with:
         python-version: ${{ matrix.python }}
     - name: Install dependencies
-      run: sudo apt-get install -y db-util rpm yum
+      run: |
+           if [ "$RUNNER_OS" == 'Linux' ]; then
+             sudo apt-get install -y db-util rpm yum
+           else
+             brew install rpm
+             sudo mkdir -p /var/lib/rpm
+           fi
+           pip install -r requirements.txt
     - name: Run unit tests
       run: python setup.py test
-  markdown:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-    - name: Lint Markdown
-      uses: actionshub/markdownlint@1.2.0
-    - name: Check links
-      uses: gaurav-nelson/github-action-markdown-link-check@v1
   black:
     runs-on: ubuntu-latest
     steps:
@@ -39,3 +42,33 @@ jobs:
       uses: lgeiger/black-action@v1.0.1
       with:
         args: "--check ."
+  pyre:
+   runs-on: ubuntu-latest
+   steps:
+   - name: Checkout repository
+     uses: actions/checkout@v2
+   - name: Setup Python
+     uses: actions/setup-python@v2
+   - name: Install dependencies
+     run: pip install -r requirements.txt pyre-check==0.0.20
+   - name: Run Pyre typechecking
+     run: |
+          pyre \
+            --noninteractive \
+            --source-directory dcrpm \
+            --source-directory tests \
+            --output text \
+            --search-path "$(python -c "import site; print(site.getsitepackages()[0])")" \
+            --search-path . \
+            --show-parse-errors \
+            check
+# FIXME disable for now, the markdown docs here need lots of work
+#  markdown:
+#    runs-on: ubuntu-latest
+#    steps:
+#    - name: Checkout repository
+#      uses: actions/checkout@v2
+#    - name: Lint Markdown
+#      uses: actionshub/markdownlint@1.2.0
+#    - name: Check links
+#      uses: gaurav-nelson/github-action-markdown-link-check@v1

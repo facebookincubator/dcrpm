@@ -386,7 +386,7 @@ class TestRPMUtil(testslide.TestCase):
             old_usr_bin_rpm_wait_throw,
             old_usr_bin_rpm_cmdline_throw,
             young_bin_rpm,
-        ]  # type: t.List[psutil.Process]
+        ]  # type: t.List[typing.Any]
         (
             self.mock_callable(psutil, "process_iter")
             .to_yield_values(test_procs)

@@ -1,0 +1,41 @@
+name: Continuous Integration
+on:
+  push:
+    branches: [master]
+  pull_request:
+jobs:
+  ruby:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: [2.7, 3.5, 3.6, 3.7, 3.8]
+    runs-on: ubuntu-latest	
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install dependencies
+      run: sudo apt-get install -y db-util rpm yum
+    - name: Run unit tests
+      run: python setup.py test
+  markdown:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Lint Markdown
+      uses: actionshub/markdownlint@1.2.0
+    - name: Check links
+      uses: gaurav-nelson/github-action-markdown-link-check@v1
+  black:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Run black
+      uses: lgeiger/black-action@v1.0.1
+      with:
+        args: "--check ."

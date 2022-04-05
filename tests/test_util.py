@@ -45,7 +45,9 @@ def make_mock_popen(
     Creates a simple mocked Popen object that responds to Popen.poll and
     Popen.communicate.
     """
-    mock_popen_obj = Mock()
+
+    # set PID because this is used by pytest's logging.py
+    mock_popen_obj = Mock(pid=42)
     config = {"poll.return_value": returncode}  # type: t.Dict[str, t.Any]
     if communicate_raise:
         config["communicate.side_effect"] = TimeoutExpired()

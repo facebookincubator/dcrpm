@@ -33,9 +33,7 @@ If you want to develop, the easiest way to get dcrpm is by using pip:
 
 When developing it's important to make sure the tests continue to pass, and to ensure new features have the appropriate test coverage. You can run the test suite with:
 
-    python setup.py test
-
-which will fetch mock from pypi if needed and then run the tests.
+    pytest
 
 ## Contribute
 See the CONTRIBUTING file for how to help out.

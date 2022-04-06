@@ -8,18 +8,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, macos-latest]
-        python: [2.7, 3.4, 3.6, 3.7, 3.8]
-        exclude:
-          # Python 3.4 isn't available on macOS
-          - os: macos-latest
-            python: 3.4
+        os: [ubuntu-18.04] # macos-latest currently broken
+        python: ["2.7", "3.6", "3.7", "3.8", "3.9", "3.10", "3.11.0-alpha.6"]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Setup Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python }}
     - name: Install dependencies
@@ -37,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Run black
       uses: lgeiger/black-action@v1.0.1
       with:
@@ -46,9 +42,9 @@ jobs:
    runs-on: ubuntu-latest
    steps:
    - name: Checkout repository
-     uses: actions/checkout@v2
+     uses: actions/checkout@v3
    - name: Setup Python
-     uses: actions/setup-python@v2
+     uses: actions/setup-python@v3
    - name: Install dependencies
      run: pip install -r requirements.txt pyre-check==0.0.20
    - name: Run Pyre typechecking

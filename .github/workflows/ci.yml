@@ -26,7 +26,7 @@ jobs:
              brew install rpm
              sudo mkdir -p /var/lib/rpm
            fi
-           pip install -r requirements.txt
+           pip install -r requirements-test.txt
     - name: Run unit tests
       run: pytest -v
   black:
@@ -46,7 +46,7 @@ jobs:
    - name: Setup Python
      uses: actions/setup-python@v3
    - name: Install dependencies
-     run: pip install -r requirements.txt pyre-check==0.0.20
+     run: pip install -r requirements-test.txt pyre-check==0.0.20
    - name: Run Pyre typechecking
      run: |
           pyre \

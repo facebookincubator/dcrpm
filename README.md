@@ -1,6 +1,6 @@
 # dcrpm
 
-![Continuous Integration](https://github.com/facebookincubator/dcrpm/workflows/Continuous%20Integration/badge.svg?event=push) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![Continuous Integration](https://github.com/facebookincubator/dcrpm/actions/workflows/ci.yml/badge.svg)](https://github.com/facebookincubator/dcrpm/actions/workflows/ci.yml) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 dcrpm ("detect and correct rpm") is a tool to detect and correct common issues around RPM database corruption. It attempts a query against your RPM database and runs db4's `db_recover` if it's hung or otherwise seems broken. It then kills any jobs which had the RPM db open previously since they will be stuck in infinite loops within libdb and can't recover cleanly.
 

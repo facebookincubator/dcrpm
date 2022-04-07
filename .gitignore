@@ -29,7 +29,7 @@ tmtagsHistory
 env/
 .env
 venv
-.venv
+.venv*
 ENV/
 build/
 develop-eggs/

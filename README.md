@@ -28,12 +28,39 @@ This will fetch psutil from PyPI for you. dcrpm also assumes that the system wil
 ## Building and installing for development
 If you want to develop, the easiest way to get dcrpm is by using pip:
 
-    pip install -r requirements.txt # get extra packages
+    pip install -r requirements-test.txt # get extra packages
     python setup.py install
 
 When developing it's important to make sure the tests continue to pass, and to ensure new features have the appropriate test coverage. You can run the test suite with:
 
     pytest
+
+
+## Preparing a new release
+First, install some extra packages:
+
+    pip install -r requirements-release.txt
+
+Then create the source distribution and the wheel:
+
+### Old style
+
+    python setup.py sdist bdist_wheel
+
+### With the build module
+
+This has the advantage of performing the build in an isolated virtual environment
+
+    python -m build --sdist --wheel
+
+Then verify them:
+
+    twine check dist/*
+
+A `Makefile` is provided to simplify this
+
+    make dist
+    make check-release
 
 ## Contribute
 See the CONTRIBUTING file for how to help out.

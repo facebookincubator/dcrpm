@@ -63,3 +63,8 @@ pip-delete-this-directory.txt
 
 # typechecking
 .pyre/
+
+# PackIt
+/dcrpm-*.tar.gz
+/python-dcrpm-*.src.rpm
+/python-dcrpm.spec

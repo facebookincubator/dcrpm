@@ -1,3 +1,4 @@
+include legacy_setup.py
 include *.md
 include tests/*.json
 include tests/*.py

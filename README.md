@@ -10,6 +10,9 @@ Run `dcrpm` with no option to detect and correct any outstanding issues with RPM
 ## Requirements
 dcrpm requires Python 2.7 and above and the package psutil. It also requires `lsof` to be in `$PATH`. It should work on any Linux distribution with RPM and on Mac OS X.
 
+To use `setup.py` you need setuptools >= 40.9.0 (see [setup.cfg-only projects](https://setuptools.pypa.io/en/latest/setuptools.html#setup-cfg-only-projects)).
+Substitute `legacy_setup.py` if you have an older setuptools (e.g. when building on EL 8).
+
 ## Installing dcrpm
 dcrpm is packaged in Fedora as of Fedora 32 and in EPEL as of EPEL 8. It can be installed with:
 
@@ -45,13 +48,13 @@ Then create the source distribution and the wheel:
 
 ### Old style
 
-    python setup.py sdist bdist_wheel
+    python setup.py sdist bdist_wheel --universal
 
 ### With the build module
 
-This has the advantage of performing the build in an isolated virtual environment
+This has the advantage of performing the build in an isolated virtual environment. However, it does not build a universal (py2/py3) wheel anymore.
 
-    python -m build --sdist --wheel
+    python -m build
 
 Then verify them:
 
@@ -60,6 +63,8 @@ Then verify them:
 A `Makefile` is provided to simplify this
 
     make dist
+    make dist USE_BUILD=1  # use the build module, soon to be default
+    make dist USE_LEGACY=1 # use legacy_setup.py
     make check-release
 
 ## Contribute

@@ -1,2 +1,4 @@
+include *.md
+include tests/*.json
 include tests/*.py
 include tests/rpmdbs/*.tar.gz

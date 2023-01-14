@@ -34,6 +34,9 @@ except ImportError:
 
 class DcRPM:
     YUM_PATH = "/var/lib/yum"  # type: str
+    if not os.path.exists(YUM_PATH):
+        YUM_PATH = "/var/lib/dnf"
+
     YUM_TRANSACTION_BASE = "*transaction-all.*"  # type: str
 
     def __init__(self, rpmutil, args):
